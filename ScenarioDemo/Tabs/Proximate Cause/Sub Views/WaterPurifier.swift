@@ -42,7 +42,7 @@ struct PanelView: View {
     @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
-        VStack(spacing: 34){
+        VStack(alignment: .leading, spacing: 34){
             PanelHeaderView()
             PickerView()
             HintView()
