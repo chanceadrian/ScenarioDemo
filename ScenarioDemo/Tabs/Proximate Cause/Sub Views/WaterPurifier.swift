@@ -20,7 +20,7 @@ struct WaterPurifierView: View {
         
         HStack(spacing: 32) {
             PanelView()
-            ChartView()
+            WaterChartView()
         }
         .padding(.horizontal, 20)
         .padding(.top, 16)

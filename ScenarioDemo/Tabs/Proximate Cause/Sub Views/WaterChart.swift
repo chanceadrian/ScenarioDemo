@@ -7,10 +7,53 @@
 
 import SwiftUI
 
-struct ChartView: View {
+struct WaterChartView: View {
     
     var body: some View {
-        HStack(alignment: .top, spacing: 8){
+        VStack(alignment: .leading, spacing: 11){
+            WaterChartSpeedView()
+            WaterChartPowerView()
+            WaterChartOutputView()
+            
+        }
+    }
+}
+
+struct WaterChartSpeedView: View {
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 11){
+            Text("Water Purifier Impeller Speed")
+                .font(.body)
+                .fontWeight(.semibold)
+                .foregroundStyle(.secondary)
+            //evi, need the generic swift chart here
+        }
+    }
+}
+
+struct WaterChartPowerView: View {
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 11){
+            Text("Water Purifier Impeller Power Draw")
+                .font(.body)
+                .fontWeight(.semibold)
+                .foregroundStyle(.secondary)
+            //evi, need the generic swift chart here
+        }
+    }
+}
+
+struct WaterChartOutputView: View {
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 11){
+            Text("Water Purifier Output")
+                .font(.body)
+                .fontWeight(.semibold)
+                .foregroundStyle(.secondary)
+            //evi, need the generic swift chart here
         }
     }
 }
