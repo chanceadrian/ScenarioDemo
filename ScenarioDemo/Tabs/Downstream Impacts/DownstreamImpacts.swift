@@ -11,9 +11,11 @@ struct DownstreamImpactsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Downstream Impacts")
-                .font(.largeTitle)
+            DownstreamHeaderView()
+            Spacer()
         }
+        .padding()
+        .background(Color(.systemGroupedBackground))
     }
 }
 

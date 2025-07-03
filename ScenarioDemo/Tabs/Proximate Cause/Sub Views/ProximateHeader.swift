@@ -7,14 +7,14 @@
 
 import SwiftUI
 
-struct DownstreamHeaderView: View {
+struct ProximateHeaderView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text("Downstream Impacts")
+                Text("Proximate Cause")
                     .font(.largeTitle)
-                    .fontWeight(.semibold)
+                    .fontWeight(.bold)
                 Spacer()
             }
         }
@@ -22,5 +22,5 @@ struct DownstreamHeaderView: View {
 }
 
 #Preview {
-    DownstreamHeaderView()
+    ProximateHeaderView()
 }

@@ -14,20 +14,43 @@ struct SummaryHeaderView: View {
             HStack {
                 Text("Summary")
                     .font(.largeTitle)
-                    .fontWeight(.semibold)
+                    .fontWeight(.bold)
                 Spacer()
                 HStack {
-                    VStack {
+                    VStack(alignment: .trailing) {
+                       Text("Mission Phase")
+                            .fontWeight(.medium)
+                       Text("Late Stage Transit")
+                    }
+                    .font(.footnote)
+                    Image(systemName: "location.north.line.fill")
+                        .font(.title)
+                }
+            }
+            HStack {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Power System Anomaly")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                    Text("52 minutes until Bus-3 overload. Bus-2 voltage critically low (95 V); essential systems rerouted to Bus-3 to maintain transit-phase operations.")
+                        .font(.body)
+                }
+                .frame(maxWidth: 680, alignment: .leading)
+                Spacer()
+                HStack {
+                    VStack(alignment: .trailing) {
                        Text("Ground Assistance")
                             .fontWeight(.medium)
-                       Text("None by first effect")
+                       Text("None by Next Affect")
                     }
-                    .font(.caption2)
+                    .font(.footnote)
                     Image(systemName: "person.slash.fill")
-                        .font(.title3)
+                        .font(.title)
                 }
             }
         }
+        .padding(.horizontal)
+        .padding(.horizontal, 4)
     }
 }
 

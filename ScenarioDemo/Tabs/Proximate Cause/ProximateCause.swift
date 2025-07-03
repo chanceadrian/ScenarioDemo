@@ -11,9 +11,11 @@ struct ProximateCauseView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Proximate Cause")
-                .font(.largeTitle)
+            ProximateHeaderView()
+            Spacer()
         }
+        .padding()
+        .background(Color(.systemGroupedBackground))
     }
 }
 
