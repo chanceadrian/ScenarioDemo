@@ -15,39 +15,46 @@ struct PickerEntry {
 
 struct WaterPurifierView: View {
     @Environment(\.colorScheme) private var colorScheme
+    @State private var selectedIndices: Set<Int> = [0]
     
     var body: some View {
         
-        HStack(spacing: 32) {
-            PanelView()
-            WaterChartView()
+        HStack(alignment: .top, spacing: 32) {
+            PanelView(selectedIndices: $selectedIndices)
+            WaterChartView(selectedIndices: selectedIndices)
         }
         .padding(.horizontal, 20)
         .padding(.top, 16)
         .padding(.bottom, 20)
-        .cornerRadius(24)
         .background(
             Color(colorScheme == .dark ? .systemGray6 : .systemBackground)
         )
-        .frame(height: 580)
+        .frame(height: 640)
+        .cornerRadius(24)
         
     }
 }
 
 #Preview {
-    WaterPurifierView()
+    ZStack {
+        Color(.systemGroupedBackground)
+            .ignoresSafeArea()
+        WaterPurifierView()
+    }
 }
 
 struct PanelView: View {
     @Environment(\.colorScheme) private var colorScheme
+    @Binding var selectedIndices: Set<Int>
     
     var body: some View {
         VStack(alignment: .leading, spacing: 34){
             PanelHeaderView()
-            PickerView()
+            PickerView(selectedIndices: $selectedIndices)
             HintView()
         }
         .frame(width: 290)
+        .padding(.vertical, 8)
     }
 }
 
@@ -65,30 +72,47 @@ struct PanelHeaderView: View {
 
 struct PickerView: View {
     let entries = [
-        PickerEntry(color: .cyan, name: "Speed", unit: "RPM"),
+        PickerEntry(color: .mint, name: "Speed", unit: "RPM"),
         PickerEntry(color: .cyan, name: "Power Draw", unit: "Voltage"),
         PickerEntry(color: .indigo, name: "Output", unit: "Liters")
     ]
+    
+    @Binding var selectedIndices: Set<Int>
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8){
             ForEach(entries.indices, id: \.self) { index in
                 let entry = entries[index]
-                HStack {
-                    HStack {
-                        Circle()
-                            .frame(width: 8, height: 8)
-                            .foregroundStyle(entry.color)
-                        Text(entry.name)
-                            .font(.body)
-                            .fontWeight(.medium)
+                Button {
+                    if selectedIndices.contains(index) {
+                        if selectedIndices.count > 1 {
+                            selectedIndices.remove(index)
+                        }
+                    } else {
+                        selectedIndices.insert(index)
                     }
-                    Spacer()
-                    Text(entry.unit)
-                        .font(.body)
-                        .foregroundStyle(.secondary)
+                } label: {
+                    HStack {
+                        HStack {
+                            Circle()
+                                .frame(width: 8, height: 8)
+                                .foregroundStyle(selectedIndices.contains(index) ? .white : entry.color)
+                            Text(entry.name)
+                                .font(.body)
+                                .fontWeight(.medium)
+                                .foregroundColor(selectedIndices.contains(index) ? .white : nil)
+                        }
+                        Spacer()
+                        Text(entry.unit)
+                            .font(.body)
+                            .foregroundColor(selectedIndices.contains(index) ? .white : .secondary)
+                    }
+                    .padding(.vertical, 12)
+                    .padding(.horizontal, 16)
+                    .background(selectedIndices.contains(index) ? entry.color : Color.gray.opacity(0.12))
+                    .cornerRadius(100)
                 }
-                .cornerRadius(100)
+                .buttonStyle(PlainButtonStyle())
             }
         }
     }
@@ -101,8 +125,13 @@ struct HintView: View {
             Image(systemName: "timer")
                 .font(.body)
                 .foregroundStyle(.orange)
-            Text("If not resolved, clean water supply will run low in 6 days.")
+                .fontWeight(.semibold)
+            let highlighted = AttributedString("6 days", attributes: AttributeContainer()
+                .foregroundColor(.orange)
+                .font(.system(size: 17, weight: .semibold)))
+            Text(AttributedString("If not resolved, clean water supply will run low in ") + highlighted + AttributedString("."))
                 .font(.body)
         }
     }
 }
+

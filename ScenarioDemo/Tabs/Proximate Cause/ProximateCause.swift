@@ -12,6 +12,7 @@ struct ProximateCauseView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             ProximateHeaderView()
+            WaterPurifierView()
             Spacer()
         }
         .padding()
