@@ -10,18 +10,18 @@ struct ActionsAndCommView: View {
     var body: some View {
         HStack(alignment: .top, spacing: 24) {
             // Left Column
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text("Related Ground Communication")
                     .font(.system(.title3, weight: .semibold))
                     .alignmentGuide(.top) { d in d[.top] }
 
                 RoundedRectangle(cornerRadius: 22)
                     .fill(Color(.systemBackground))
-                    .frame(width: 641, height: 154)
+                    .frame(height: 154)
 
                 RoundedRectangle(cornerRadius: 22)
                     .fill(Color(.systemBackground))
-                    .frame(width: 641, height: 50)
+                    .frame(height: 50)
                     .overlay(
                         HStack {
                             Text("Most Recent Ground Communication")
@@ -34,17 +34,17 @@ struct ActionsAndCommView: View {
 
                 Spacer(minLength: 0)
             }
-            .frame(width: 641, height: 240, alignment: .top)
+            .frame(height: 240, alignment: .top)
             
             // Right Column
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text("Proposed Actions")
                     .font(.system(.title3, weight: .semibold))
                     .alignmentGuide(.top) { d in d[.top] }
 
                 RoundedRectangle(cornerRadius: 22)
                     .fill(Color(.systemBackground))
-                    .frame(width: 641, height: 50)
+                    .frame(height: 50)
                     .overlay(
                         HStack {
                             Text("Power Bus 2 Reset Procedure")
@@ -60,7 +60,7 @@ struct ActionsAndCommView: View {
 
                 RoundedRectangle(cornerRadius: 22)
                     .fill(Color(red: 120/255, green: 120/255, blue: 128/255, opacity: 0.08))
-                    .frame(width: 641, height: 50)
+                    .frame(height: 50)
                     .overlay(
                         Text("None")
                             .padding(.horizontal)
@@ -72,7 +72,7 @@ struct ActionsAndCommView: View {
 
                 RoundedRectangle(cornerRadius: 22)
                     .fill(Color(red: 120/255, green: 120/255, blue: 128/255, opacity: 0.08))
-                    .frame(width: 641, height: 50)
+                    .frame(height: 50)
                     .overlay(
                         Text("None")
                             .padding(.horizontal)
@@ -80,7 +80,7 @@ struct ActionsAndCommView: View {
                     )
                 Spacer(minLength: 0)
             }
-            .frame(width: 641, height: 240, alignment: .top)
+            .frame(height: 240, alignment: .top)
         }
         .padding(.horizontal)
     }

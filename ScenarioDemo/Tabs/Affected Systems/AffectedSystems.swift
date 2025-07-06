@@ -18,7 +18,7 @@ struct ProximateCauseView: View {
                 }
                 VStack(alignment: .leading, spacing: 16) {
                     ProximateHeaderView(text: "Downstream Impacts")
-                    WaterPurifierView()
+                    PowerSystemView()
                 }
                 Spacer()
             }
