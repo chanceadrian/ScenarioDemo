@@ -9,17 +9,19 @@ import SwiftUI
 
 struct NextEffect: View {
     @Environment(\.colorScheme) private var colorScheme
+    @State private var timeRemaining: [TimeInterval] = []
+    @State private var timer: Timer?
     
     struct Entry: Identifiable {
         let id = UUID()
-        let time: String
+        let initialTime: TimeInterval // Time in seconds
         let message: String
     }
     
     private let entries: [Entry] = [
-        .init(time: "in 48:32", message: "Power Bus 3 overload, followed by a loss of power supply to critical transit phase components."),
-        .init(time: "in 6 hours", message: "Power Bus 2 circuit reset due to prolonged high usage."),
-        .init(time: "in 7 days", message: "Water supply low due to low output from water purifier.")
+        .init(initialTime: 48 * 60 + 32, message: "Power Bus 3 overload, followed by a loss of power supply to critical transit phase components."), // 48:32
+        .init(initialTime: 6 * 60 * 60, message: "Power Bus 2 circuit reset due to prolonged high usage."), // 6 hours
+        .init(initialTime: 7 * 24 * 60 * 60, message: "Water supply low due to low output from water purifier.") // 7 days
     ]
     
     var body: some View {
@@ -35,13 +37,14 @@ struct NextEffect: View {
                         VStack(alignment: .leading, spacing: 4) {
                             if idx == 0 {
                                 HStack() {
-                                    TimerView().padding(.trailing, 8)
+                                    TimerView(timeRemaining: timeRemaining.indices.contains(idx) ? timeRemaining[idx] : 0)
+                                        .padding(.trailing, 8)
                                     VStack(alignment: .leading, spacing: 4) {
                                         HStack() {
                                             Image(systemName: "timer")
                                                 .font(.footnote)
-                                                .foregroundColor(.secondary)
-                                            Text(entry.time)
+                                                .foregroundColor(.orange)
+                                            Text(formatTimeString(timeRemaining.indices.contains(idx) ? timeRemaining[idx] : 0))
                                                 .font(.footnote)
                                                 .foregroundColor(.secondary)
                                         }
@@ -51,7 +54,7 @@ struct NextEffect: View {
                                     }
                                 }
                             } else {
-                                Text(entry.time)
+                                Text(formatTimeString(timeRemaining.indices.contains(idx) ? timeRemaining[idx] : 0))
                                     .font(.footnote)
                                     .foregroundColor(.secondary)
                                 Text(entry.message)
@@ -74,6 +77,53 @@ struct NextEffect: View {
         }
         .padding(.vertical, 4)
         .background(Color(.systemGroupedBackground))
+        .onAppear {
+            setupTimer()
+        }
+        .onDisappear {
+            timer?.invalidate()
+        }
+    }
+    
+    private func setupTimer() {
+        // Initialize timeRemaining array with initial values
+        timeRemaining = entries.map { $0.initialTime }
+        
+        // Start the timer
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            updateCountdown()
+        }
+    }
+    
+    private func updateCountdown() {
+        for i in timeRemaining.indices {
+            if timeRemaining[i] > 0 {
+                timeRemaining[i] -= 1
+            }
+        }
+    }
+    
+    private func formatTimeString(_ seconds: TimeInterval) -> String {
+        let totalSeconds = Int(seconds)
+        
+        if totalSeconds <= 0 {
+            return "expired"
+        }
+        
+        let days = totalSeconds / (24 * 60 * 60)
+        let hours = (totalSeconds % (24 * 60 * 60)) / (60 * 60)
+        let minutes = (totalSeconds % (60 * 60)) / 60
+        let secs = totalSeconds % 60
+        
+        if days > 0 {
+            return "in \(days) day\(days == 1 ? "" : "s")"
+        } else if hours > 0 {
+            return "in \(hours) hour\(hours == 1 ? "" : "s")"
+        } else if minutes > 0 {
+            return "in \(minutes):\(String(format: "%02d", secs))"
+        } else {
+            return "in \(secs)s"
+        }
     }
 }
 
