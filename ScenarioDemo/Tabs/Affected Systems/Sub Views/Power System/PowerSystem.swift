@@ -23,6 +23,7 @@ struct PowerSystemView: View {
                 ],
                 hintMessage: "If Bus 2 Power is not restored, Bus 3 expected to exceed safe limits in ",
                 hintHighlight: "52 minutes.",
+                segmentedControl: true,
                 selectedIndices: $selectedIndices
             )
             PowerSystemChartView()
@@ -39,6 +40,19 @@ struct PowerSystemView: View {
     }
 }
 
+struct DataSchematicSwitcher: View {
+    @State private var selection: Int = 0
+    let options = ["Data", "Schematic"]
+    var body: some View {
+        Picker("Mode", selection: $selection) {
+            ForEach(0..<options.count, id: \.self) { index in
+                Text(options[index])
+            }
+        }
+        .pickerStyle(.segmented)
+    }
+}
+
 #Preview {
     ZStack {
         Color(.systemGroupedBackground)
@@ -47,3 +61,4 @@ struct PowerSystemView: View {
             .padding()
     }
 }
+

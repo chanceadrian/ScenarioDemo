@@ -7,17 +7,23 @@
 
 import SwiftUI
 
+/// Expects DataSchematicSwitcher to be declared elsewhere in the project.
+
 struct PanelView: View {
     let panelTitle: String
     let panelSubtitle: String
     let pickerEntries: [PickerEntry]
     let hintMessage: String
     let hintHighlight: String?
+    let segmentedControl: Bool
     @Binding var selectedIndices: Set<Int>
     
     var body: some View {
         VStack(alignment: .leading, spacing: 34){
             PanelHeaderView(title: panelTitle, subtitle: panelSubtitle)
+            if segmentedControl {
+                DataSchematicSwitcher()
+            }
             PickerView(entries: pickerEntries, selectedIndices: $selectedIndices)
             HintView(message: hintMessage, highlight: hintHighlight)
         }
@@ -112,3 +118,4 @@ struct HintView: View {
         }
     }
 }
+

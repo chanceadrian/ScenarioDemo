@@ -40,13 +40,15 @@ struct NextEffect: View {
                                     TimerView(timeRemaining: timeRemaining.indices.contains(idx) ? timeRemaining[idx] : 0)
                                         .padding(.trailing, 8)
                                     VStack(alignment: .leading, spacing: 4) {
-                                        HStack() {
+                                        HStack(spacing: 4) {
                                             Image(systemName: "timer")
                                                 .font(.footnote)
                                                 .foregroundColor(.orange)
+                                                .fontWeight(.semibold)
                                             Text(formatTimeString(timeRemaining.indices.contains(idx) ? timeRemaining[idx] : 0))
                                                 .font(.footnote)
-                                                .foregroundColor(.secondary)
+                                                .foregroundColor(.orange)
+                                                .fontWeight(.semibold)
                                         }
                                         Text(entry.message)
                                             .font(.subheadline)
@@ -57,6 +59,7 @@ struct NextEffect: View {
                                 Text(formatTimeString(timeRemaining.indices.contains(idx) ? timeRemaining[idx] : 0))
                                     .font(.footnote)
                                     .foregroundColor(.secondary)
+                                    .fontWeight(.semibold)
                                 Text(entry.message)
                                     .font(.subheadline)
                             }
