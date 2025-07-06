@@ -13,9 +13,10 @@ struct SummaryView: View {
         ScrollView(.vertical) {
             VStack(alignment: .leading, spacing: 28) {
                 SummaryHeaderView()
-                Timeline()
-                NextEffect()
-                Spacer()
+                    Timeline()
+                    NextEffect()
+                    ActionsAndCommView()
+
             }
         }
         .background(Color(.systemGroupedBackground))

@@ -27,10 +27,9 @@ struct Timeline: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text("Timeline")
-                .font(.title3)
+                .font(.title2)
                 .fontWeight(.semibold)
                 .padding(.horizontal)
-                .padding(.leading, 4)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 2) {
