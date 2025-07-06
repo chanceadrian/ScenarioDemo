@@ -10,12 +10,14 @@ import SwiftUI
 struct ProximateCauseView: View {
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            ProximateHeaderView()
-            WaterPurifierView()
-            Spacer()
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                ProximateHeaderView()
+                WaterPurifierView()
+                Spacer()
+            }
+            .padding()
         }
-        .padding()
         .background(Color(.systemGroupedBackground))
     }
 }
