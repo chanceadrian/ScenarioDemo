@@ -13,11 +13,8 @@ struct ContentView: View {
             Tab("Summary", systemImage: "list.bullet") {
                 SummaryView()
             }
-            Tab("Proximate Cause", systemImage: "target") {
+            Tab("Affected Systems", systemImage: "arrow.trianglehead.branch") {
                 ProximateCauseView()
-            }
-            Tab("Downstream Impacts", systemImage: "arrow.trianglehead.branch") {
-                DownstreamImpactsView()
             }
         }
         .tabViewStyle(.automatic)
