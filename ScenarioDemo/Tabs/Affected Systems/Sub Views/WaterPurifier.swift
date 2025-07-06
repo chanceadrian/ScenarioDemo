@@ -65,7 +65,7 @@ struct PanelHeaderView: View {
             Text("Water Purifier")
                 .font(.title)
                 .fontWeight(.semibold)
-            Text("Starting at 4:55, Water Purifier Impeller Speed breached low threshold. System provides more power from Power Bus 2 power to compensate for low speed. Output now 0L/hour. ")
+            Text("Starting at 4:55, Water Purifier Impeller Speed breached low threshold. Output now 0L/hour. ")
         }
     }
 }

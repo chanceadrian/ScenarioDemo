@@ -8,19 +8,17 @@
 import SwiftUI
 
 struct ProximateHeaderView: View {
+    let text: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text("Affected Systems")
-                    .font(.largeTitle)
-                    .fontWeight(.bold)
+                Text(text)
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .padding(.horizontal,6)
                 Spacer()
             }
         }
     }
-}
-
-#Preview {
-    ProximateHeaderView()
 }
