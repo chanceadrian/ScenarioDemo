@@ -188,7 +188,7 @@ struct WaterChartSpeedView: View {
         let calendar = Calendar.current
         let today = Date()
         let startComponents = calendar.dateComponents([.year, .month, .day], from: today)
-        let startTime = calendar.date(bySettingHour: 16, minute: 44, second: 0, of: calendar.date(from: startComponents)!)!
+        let startTime = calendar.date(bySettingHour: 16, minute: 41, second: 0, of: calendar.date(from: startComponents)!)!
         
         var points = [DataPoint]()
         for i in 0..<20 {
@@ -288,7 +288,7 @@ struct WaterChartPowerView: View {
         let calendar = Calendar.current
         let today = Date()
         let startComponents = calendar.dateComponents([.year, .month, .day], from: today)
-        let startTime = calendar.date(bySettingHour: 16, minute: 44, second: 0, of: calendar.date(from: startComponents)!)!
+        let startTime = calendar.date(bySettingHour: 16, minute: 41, second: 0, of: calendar.date(from: startComponents)!)!
         
         var points = [DataPoint]()
         for i in 0..<20 {
@@ -330,6 +330,17 @@ struct WaterChartPowerView: View {
                 )
                 .symbol(.circle)
                 .foregroundStyle(showingSync ? Color(.systemGray3) : Color.cyan)
+                
+                // Thresholds
+                let highThreshold = 360.0
+
+                // Low threshold line and zone
+                RuleMark(y: .value("highThreshold", highThreshold))
+                    .foregroundStyle(.gray)
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [6, 4]))
+                    .annotation(position: .top, alignment: .leading) {
+                        Text("High").foregroundColor(.gray).font(.footnote)
+                    }
             }
             .chartXScale(domain: domain ?? (data.first?.time ?? Date())...(data.last?.time ?? Date()))
             .chartYAxis { AxisMarks(preset: .inset) }
@@ -388,7 +399,7 @@ struct WaterChartOutputView: View {
         let calendar = Calendar.current
         let today = Date()
         let startComponents = calendar.dateComponents([.year, .month, .day], from: today)
-        let startTime = calendar.date(bySettingHour: 16, minute: 44, second: 0, of: calendar.date(from: startComponents)!)!
+        let startTime = calendar.date(bySettingHour: 16, minute: 41, second: 0, of: calendar.date(from: startComponents)!)!
         
         var points = [DataPoint]()
         for i in 0..<20 {
@@ -430,6 +441,17 @@ struct WaterChartOutputView: View {
                 )
                 .symbol(.circle)
                 .foregroundStyle(showingSync ? Color(.systemGray3) : Color.indigo)
+                
+                // Thresholds
+                let lowThreshold = 4.0
+
+                // Low threshold line and zone
+                RuleMark(y: .value("lowThreshold", lowThreshold))
+                    .foregroundStyle(.gray)
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [6, 4]))
+                    .annotation(position: .top, alignment: .leading) {
+                        Text("Low").foregroundColor(.gray).font(.footnote)
+                    }
             }
             .chartXScale(domain: domain ?? (data.first?.time ?? Date())...(data.last?.time ?? Date()))
             .chartYAxis { AxisMarks(preset: .inset) }

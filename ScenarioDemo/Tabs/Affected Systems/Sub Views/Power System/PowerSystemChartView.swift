@@ -28,26 +28,33 @@ struct PowerSystemChartView: View {
         let calendar = Calendar.current
         let today = Date()
         let startComponents = calendar.dateComponents([.year, .month, .day], from: today)
-        let startTime = calendar.date(bySettingHour: 16, minute: 44, second: 0, of: calendar.date(from: startComponents)!)!
+        let startTime = calendar.date(bySettingHour: 16, minute: 41, second: 0, of: calendar.date(from: startComponents)!)!
         
         var allPoints = [VoltageDataPoint]()
         
         // Bus 1 - Straight line at ~200V (indigo)
         for i in 0..<20 { // Extended to go to 5:02 PM (18 minutes from 4:44 PM)
             let time = calendar.date(byAdding: .minute, value: i, to: startTime)!
-            let voltage = 200.0 + sin(Double(i) * 0.3) * 1.5
+            let voltage = 180.0 + sin(Double(i) * 0.3) * 6.5
             allPoints.append(VoltageDataPoint(time: time, voltage: voltage, isPredicted: false, busNumber: 1))
         }
         
-        // Bus 2 - Approaching 0V (mint)
-        for i in 0..<20 { // Extended to go to 5:02 PM
+        // Bus 2 - Intermittently falling for first 10 points (no deeper than 120), sharp decline at 11th, hover just above 0
+        for i in 0..<20 {
             let time = calendar.date(byAdding: .minute, value: i, to: startTime)!
-            let voltage: Double
-            if i < 12 {
-                voltage = 180 - Double(i) * (120.0 / 12.0)
+            var voltage: Double
+            if i < 10 {
+                // Intermittent fall: alternate between dropping and holding
+                if i % 2 == 0 {
+                    voltage = 180 - Double(i) * 6.0 // drops in steps
+                } else {
+                    voltage = 180 - Double(i - 1) * 6.0 // hold previous
+                }
+                if voltage < 120 { voltage = 120 }
+            } else if i == 10 {
+                voltage = 8 // sharp drop
             } else {
-                // Continue declining more gradually to near 0
-                voltage = max(5, 60 - Double(i - 12) * (55.0 / 7.0))
+                voltage = 6 + Double.random(in: 0...4) // hover just above 0
             }
             allPoints.append(VoltageDataPoint(time: time, voltage: voltage, isPredicted: false, busNumber: 2))
         }
@@ -56,11 +63,11 @@ struct PowerSystemChartView: View {
         for i in 0..<20 { // Extended to go to 5:02 PM
             let time = calendar.date(byAdding: .minute, value: i, to: startTime)!
             let voltage: Double
-            if i < 13 {
-                voltage = 190 + Double(i) * (10.0 / 13.0)
+            if i < 10 {
+                voltage = 190 + Double(i) * (10.0 / 10.0)
             } else {
                 // Continue increasing toward overload levels
-                voltage = 220 + Double(i - 13) * (60.0 / 6.0)
+                voltage = 220 + Double(i - 10) * (60.0 / 9.0)
             }
             allPoints.append(VoltageDataPoint(time: time, voltage: voltage, isPredicted: false, busNumber: 3))
         }
@@ -163,11 +170,31 @@ struct PowerSystemChartView: View {
                                 x: .value("Time", point.time),
                                 y: .value("Voltage", point.voltage)
                             )
-                            .symbol(.circle)
+                            .symbol(busNumber == 1 ? .circle : busNumber == 2 ? .square : .triangle)
                             .foregroundStyle(busColor(busNumber))
                         }
                     }
                 }
+                
+                // Thresholds
+                let highThreshold = 310.0
+                let lowThreshold = 80.0
+
+                // High threshold line and zone
+                RuleMark(y: .value("highThreshold", highThreshold))
+                    .foregroundStyle(.orange)
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [6, 4]))
+                    .annotation(position: .top, alignment: .leading) {
+                        Text("Overload").foregroundColor(.orange).font(.footnote)
+                    }
+
+                // Low threshold line and zone
+                RuleMark(y: .value("lowThreshold", lowThreshold))
+                    .foregroundStyle(.gray)
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [6, 4]))
+                    .annotation(position: .top, alignment: .leading) {
+                        Text("Low").foregroundColor(.gray).font(.footnote)
+                    }
             }
             .chartXScale(domain: timeDomain)
             .chartYScale(domain: 0...350)
