@@ -30,26 +30,25 @@ struct TimerView: View {
                 .animation(.easeInOut(duration: 0.5), value: progressValue)
             
             // Timer text
-            VStack(spacing: 2) {
-                HStack(alignment: .bottom, spacing: 2) {
+            VStack(spacing: 0) {
+                HStack(alignment: .firstTextBaseline, spacing: 1) {
                     Text(formatTimeNumber(timeRemaining))
-                        .font(.system(size: 40, weight: .bold, design: .default))
+                        .font(.title.weight(.semibold))
                         .foregroundColor(.primary)
                     Text("min")
-                        .font(.system(size: 16, weight: .medium, design: .default))
+                        .font(.title3.weight(.semibold))
                         .foregroundColor(.secondary)
-                        .padding(.bottom, 2)
                 }
-                
-                HStack(alignment: .bottom, spacing: 2) {
+                HStack(alignment: .firstTextBaseline, spacing: 1) {
                     Text(formatTimeSeconds(timeRemaining))
-                        .font(.system(size: 16, weight: .regular, design: .default))
+                        .font(.footnote)
                         .foregroundColor(.secondary)
                     Text("sec")
-                        .font(.system(size: 16, weight: .regular, design: .default))
+                        .font(.footnote)
                         .foregroundColor(.secondary)
                 }
             }
+            .padding(.top, 8)
         }
     }
     

@@ -38,6 +38,7 @@ struct Timeline: View {
                             Text(entry.time)
                                 .font(.footnote)
                                 .foregroundColor(.secondary)
+                                .fontWeight(.semibold)
 
                             Text(entry.message)
                                 .font(.subheadline)
