@@ -30,6 +30,7 @@ struct NextEffect: View {
                 .font(.title2)
                 .fontWeight(.semibold)
                 .padding(.horizontal)
+                .padding(.horizontal, 4)
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 2) {
