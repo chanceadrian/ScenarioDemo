@@ -10,6 +10,7 @@ import SwiftUI
 struct PowerSystemView: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var selectedIndices: Set<Int> = [0, 1, 2] // All buses selected by default
+    @State private var schematicSelection: Int = 0 // Track toggle state
     
     var body: some View {
         
@@ -25,9 +26,19 @@ struct PowerSystemView: View {
                 hintMessage: "If Bus 2 Power is not restored, Bus 3 expected to exceed safe limits in ",
                 hintHighlight: "52 minutes.",
                 segmentedControl: true,
+                schematicSelection: $schematicSelection,
                 selectedIndices: $selectedIndices
             )
-            PowerSystemChartView(selectedIndices: $selectedIndices)
+            
+            // Show chart or image based on toggle
+            if schematicSelection == 0 {
+                PowerSystemChartView(selectedIndices: $selectedIndices)
+            } else {
+                Image(colorScheme == .dark ? "exampleDark" : "exampleLight")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
         }
         .padding(.horizontal, 20)
         .padding(.top, 16)
@@ -42,12 +53,13 @@ struct PowerSystemView: View {
 }
 
 struct DataSchematicSwitcher: View {
-    @State private var selection: Int = 0
+    @Binding var selection: Int
     let options = ["Data", "Schematic"]
+    
     var body: some View {
         Picker("Mode", selection: $selection) {
             ForEach(0..<options.count, id: \.self) { index in
-                Text(options[index])
+                Text(options[index]).tag(index)
             }
         }
         .pickerStyle(.segmented)
@@ -62,4 +74,3 @@ struct DataSchematicSwitcher: View {
             .padding()
     }
 }
-

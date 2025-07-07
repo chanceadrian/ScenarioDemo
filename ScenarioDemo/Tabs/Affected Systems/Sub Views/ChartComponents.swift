@@ -16,13 +16,14 @@ struct PanelView: View {
     let hintMessage: String
     let hintHighlight: String?
     let segmentedControl: Bool
+    var schematicSelection: Binding<Int>? = nil
     @Binding var selectedIndices: Set<Int>
     
     var body: some View {
         VStack(alignment: .leading, spacing: 34){
             PanelHeaderView(title: panelTitle, subtitle: panelSubtitle)
             if segmentedControl {
-                DataSchematicSwitcher()
+                DataSchematicSwitcher(selection: schematicSelection ?? .constant(0))
             }
             PickerView(entries: pickerEntries, selectedIndices: $selectedIndices)
             HintView(message: hintMessage, highlight: hintHighlight)
@@ -118,4 +119,3 @@ struct HintView: View {
         }
     }
 }
-
