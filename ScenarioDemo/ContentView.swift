@@ -14,7 +14,7 @@ struct ContentView: View {
                 SummaryView()
             }
             Tab("Affected Systems", systemImage: "arrow.trianglehead.branch") {
-                ProximateCauseView()
+                AffectedSystemsView()
             }
         }
         .tabViewStyle(.automatic)
