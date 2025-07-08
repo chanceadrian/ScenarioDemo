@@ -7,7 +7,7 @@
 import SwiftUI
 import Charts
 
-struct VoltageDataPoint: Identifiable {
+struct VoltageDataPointAlt: Identifiable {
     let id = UUID()
     let time: Date
     let voltage: Double
@@ -15,8 +15,7 @@ struct VoltageDataPoint: Identifiable {
     let busNumber: Int
 }
 
-struct PowerSystemChartView: View {
-    @Binding var selectedIndices: Set<Int>
+struct PowerSystemChartViewAlt: View {
     
     // Compute shared time domain like water purifier
     private var timeDomain: ClosedRange<Date> {
@@ -75,53 +74,6 @@ struct PowerSystemChartView: View {
         return allPoints
     }
     
-    static func generatePredictedData(realPoints: [VoltageDataPoint]) -> [VoltageDataPoint] {
-        let calendar = Calendar.current
-        var predictedPoints = [VoltageDataPoint]()
-        
-        let lastBus1 = realPoints.filter { $0.busNumber == 1 }.last
-        let lastBus2 = realPoints.filter { $0.busNumber == 2 }.last
-        let lastBus3 = realPoints.filter { $0.busNumber == 3 }.last
-        
-        // End time for data should be 5:02 PM (not domain end)
-        let today = Date()
-        let startComponents = calendar.dateComponents([.year, .month, .day], from: today)
-        let dataEndTime = calendar.date(bySettingHour: 17, minute: 2, second: 0, of: calendar.date(from: startComponents)!)!
-        
-        for busNum in 1...3 {
-            guard let lastPoint = (busNum == 1 ? lastBus1 : busNum == 2 ? lastBus2 : lastBus3) else { continue }
-            
-            // Don't add the connecting point - let predictions continue naturally from last real point
-            
-            // Only generate predictions until 5:02 PM
-            var i = 1 // Start from 1 minute after last real point
-            while i <= 4 { // Only 3-4 prediction points to avoid long horizontal lines
-                guard let time = calendar.date(byAdding: .minute, value: i, to: lastPoint.time),
-                      time <= dataEndTime else { break }
-                
-                let voltage: Double
-                switch busNum {
-                case 1:
-                    // Bus 1 continues hovering around 200V with slight variation
-                    voltage = lastPoint.voltage + sin(Double(i) * 0.5) * 0.8
-                case 2:
-                    // Bus 2 continues declining toward 0V more aggressively
-                    voltage = max(0, lastPoint.voltage - Double(i) * 3.0)
-                case 3:
-                    // Bus 3 continues increasing (overload trend)
-                    voltage = lastPoint.voltage + Double(i) * 8.0
-                default:
-                    voltage = lastPoint.voltage
-                }
-                
-                predictedPoints.append(VoltageDataPoint(time: time, voltage: voltage, isPredicted: true, busNumber: busNum))
-                i += 1
-            }
-        }
-        
-        return predictedPoints
-    }
-    
     static func getTimeDomain() -> ClosedRange<Date> {
         let calendar = Calendar.current
         let today = Date()
@@ -142,37 +94,34 @@ struct PowerSystemChartView: View {
     var body: some View {
         let realData = PowerSystemChartView.generateBusData()
         
-        VStack(alignment: .leading) {
+        VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Text("System Voltage")
                     .font(.headline)
                 Spacer()
                 Text("V")
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
             }
             
             Chart {
                 ForEach([1, 2, 3], id: \.self) { busNumber in
-                    if selectedIndices.contains(busNumber - 1) {
-                        ForEach(realData.filter { $0.busNumber == busNumber }) { point in
-                            LineMark(
-                                x: .value("Time", point.time),
-                                y: .value("Voltage", point.voltage),
-                                series: .value("Series", "Bus\(busNumber)Real")
-                            )
-                            .foregroundStyle(busColor(busNumber))
-                            .lineStyle(StrokeStyle(lineWidth: 2))
-                        }
-                        
-                        ForEach(realData.filter { $0.busNumber == busNumber }) { point in
-                            PointMark(
-                                x: .value("Time", point.time),
-                                y: .value("Voltage", point.voltage)
-                            )
-                            .symbol(busNumber == 1 ? .circle : busNumber == 2 ? .square : .triangle)
-                            .foregroundStyle(busColor(busNumber))
-                        }
+                    ForEach(realData.filter { $0.busNumber == busNumber }) { point in
+                        LineMark(
+                            x: .value("Time", point.time),
+                            y: .value("Voltage", point.voltage),
+                            series: .value("Series", "Bus\(busNumber)Real")
+                        )
+                        .foregroundStyle(busColor(busNumber))
+                        .lineStyle(StrokeStyle(lineWidth: 2))
+                    }
+                    
+                    ForEach(realData.filter { $0.busNumber == busNumber }) { point in
+                        PointMark(
+                            x: .value("Time", point.time),
+                            y: .value("Voltage", point.voltage)
+                        )
+                        .symbol(busNumber == 1 ? .circle : busNumber == 2 ? .square : .triangle)
+                        .foregroundStyle(busColor(busNumber))
                     }
                 }
                 
@@ -214,6 +163,28 @@ struct PowerSystemChartView: View {
                     }
                 }
             }
+            
+            // Legend HStack added here
+            HStack(spacing: 16) {
+                HStack(spacing: 4) {
+                    Image(systemName: "circle.fill")
+                        .foregroundStyle(.indigo)
+                    Text("Bus 1")
+                }
+                HStack(spacing: 4) {
+                    Image(systemName: "square.fill")
+                        .foregroundStyle(.mint)
+                    Text("Bus 2")
+                }
+                HStack(spacing: 4) {
+                    Image(systemName: "triangle.fill")
+                        .foregroundStyle(.cyan)
+                    Text("Bus 3")
+                }
+            }
+            .font(.caption)
+            .padding(.top, 8)
+            .padding(.horizontal, 4)
         }
     }
     
@@ -227,11 +198,24 @@ struct PowerSystemChartView: View {
     }
 }
 
+// Custom Triangle shape for the legend
+struct Triangle: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.midX, y: rect.minY)) // top center
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY)) // bottom right
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY)) // bottom left
+        path.closeSubpath()
+        return path
+    }
+}
+
 #Preview {
     ZStack {
         Color(.systemGroupedBackground)
             .ignoresSafeArea()
-        PowerSystemView()
+        PowerSystemViewAlt()
             .padding()
     }
 }
+

@@ -37,6 +37,14 @@ struct PickerEntry {
     let color: Color
     let name: String
     let unit: String
+    let showIndicator: Bool
+    
+    init(color: Color, name: String, unit: String, showIndicator: Bool = true) {
+        self.color = color
+        self.name = name
+        self.unit = unit
+        self.showIndicator = showIndicator
+    }
 }
 
 struct PanelHeaderView: View {
@@ -72,9 +80,11 @@ struct PickerView: View {
                 } label: {
                     HStack {
                         HStack {
-                            Circle()
-                                .frame(width: 8, height: 8)
-                                .foregroundStyle(selectedIndices.contains(index) ? .white : entry.color)
+                            if entry.showIndicator {
+                                Circle()
+                                    .frame(width: 8, height: 8)
+                                    .foregroundStyle(selectedIndices.contains(index) ? .white : entry.color)
+                            }
                             Text(entry.name)
                                 .font(.body)
                                 .fontWeight(.medium)
@@ -119,3 +129,4 @@ struct HintView: View {
         }
     }
 }
+

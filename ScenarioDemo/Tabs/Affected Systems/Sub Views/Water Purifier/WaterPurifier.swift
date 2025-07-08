@@ -24,7 +24,7 @@ struct WaterPurifierView: View {
                 ],
                 hintMessage: "If not resolved, clean water supply will run low in ",
                 hintHighlight: "6 days.",
-                segmentedControl: false,
+                segmentedControl: true,
                 selectedIndices: $selectedIndices
             )
             WaterChartView(selectedIndices: selectedIndices)

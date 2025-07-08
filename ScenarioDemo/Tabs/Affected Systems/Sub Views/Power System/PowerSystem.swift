@@ -34,7 +34,7 @@ struct PowerSystemView: View {
             if schematicSelection == 0 {
                 PowerSystemChartView(selectedIndices: $selectedIndices)
             } else {
-                Image(colorScheme == .dark ? "exampleDark" : "exampleLight")
+                Image(colorScheme == .dark ? "verticalDark" : "verticalLight")
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)

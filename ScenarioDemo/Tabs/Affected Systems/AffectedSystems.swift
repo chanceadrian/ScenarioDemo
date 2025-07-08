@@ -19,6 +19,7 @@ struct ProximateCauseView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     ProximateHeaderView(text: "Downstream Impacts")
                     PowerSystemView()
+                    PowerSystemViewAlt()
                 }
                 Spacer()
             }
