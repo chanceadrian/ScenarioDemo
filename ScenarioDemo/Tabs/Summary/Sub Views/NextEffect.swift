@@ -19,7 +19,7 @@ struct NextEffect: View {
     }
     
     private let entries: [Entry] = [
-        .init(initialTime: 48 * 60 + 32, message: "Power Bus 3 overload, followed by a loss of power supply to critical transit phase components."), // 48:32
+        .init(initialTime: 52 * 60, message: "Power Bus 3 overload, followed by a loss of power supply to critical transit phase components."), // 52:00
         .init(initialTime: 6 * 60 * 60, message: "Power Bus 2 circuit reset due to prolonged high usage."), // 6 hours
         .init(initialTime: 7 * 24 * 60 * 60, message: "Water supply low due to low output from water purifier.") // 7 days
     ]
@@ -37,8 +37,8 @@ struct NextEffect: View {
                     ForEach(Array(entries.enumerated()), id: \.element.id) { idx, entry in
                         VStack(alignment: .leading, spacing: 4) {
                             if idx == 0 {
-                                HStack() {
-                                    TimerView(timeRemaining: timeRemaining.indices.contains(idx) ? timeRemaining[idx] : 0)
+                                HStack {
+                                    TimerView()
                                         .padding(.trailing, 8)
                                     VStack(alignment: .leading, spacing: 4) {
                                         HStack(spacing: 4) {
@@ -57,10 +57,17 @@ struct NextEffect: View {
                                     }
                                 }
                             } else {
-                                Text(formatTimeString(timeRemaining.indices.contains(idx) ? timeRemaining[idx] : 0))
-                                    .font(.footnote)
-                                    .foregroundColor(.secondary)
-                                    .fontWeight(.semibold)
+                                if idx == 1 {
+                                    Text("in 5 hours")
+                                        .font(.footnote)
+                                        .foregroundColor(.secondary)
+                                        .fontWeight(.semibold)
+                                } else if idx == 2 {
+                                    Text("in 6 days")
+                                        .font(.footnote)
+                                        .foregroundColor(.secondary)
+                                        .fontWeight(.semibold)
+                                }
                                 Text(entry.message)
                                     .font(.subheadline)
                             }
@@ -68,8 +75,7 @@ struct NextEffect: View {
                             Spacer()
                         }
                         .padding()
-                        .frame(width: idx == 0 ? 330 : 330, alignment: .leading)
-                        .frame(maxHeight: 162)
+                        .frame(width: idx == 0 ? 440 : 330, alignment: .leading)
                         .background(
                             Color(colorScheme == .dark ? .systemGray6 : .systemBackground)
                         )
@@ -94,7 +100,7 @@ struct NextEffect: View {
         timeRemaining = entries.map { $0.initialTime }
         
         // Start the timer
-        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+        timer = Timer.scheduledTimer(withTimeInterval: 60.0, repeats: true) { _ in
             updateCountdown()
         }
     }
@@ -102,35 +108,25 @@ struct NextEffect: View {
     private func updateCountdown() {
         for i in timeRemaining.indices {
             if timeRemaining[i] > 0 {
-                timeRemaining[i] -= 1
+                timeRemaining[i] -= 60
             }
         }
     }
     
     private func formatTimeString(_ seconds: TimeInterval) -> String {
         let totalSeconds = Int(seconds)
-        
         if totalSeconds <= 0 {
             return "expired"
         }
-        
-        let days = totalSeconds / (24 * 60 * 60)
-        let hours = (totalSeconds % (24 * 60 * 60)) / (60 * 60)
-        let minutes = (totalSeconds % (60 * 60)) / 60
-        let secs = totalSeconds % 60
-        
-        if days > 0 {
-            return "in \(days) day\(days == 1 ? "" : "s")"
-        } else if hours > 0 {
-            return "in \(hours) hour\(hours == 1 ? "" : "s")"
-        } else if minutes > 0 {
-            return "in \(minutes):\(String(format: "%02d", secs))"
-        } else {
-            return "in \(secs)s"
-        }
+        let minutes = totalSeconds / 60
+        return "in \(minutes)m"
     }
 }
 
 #Preview {
     NextEffect()
+}
+
+#Preview {
+    ContentView()
 }

@@ -18,8 +18,8 @@ struct PowerSystemViewAlt: View {
                 panelTitle: "Power System",
                 panelSubtitle: "At 4:57 PM, the system diverted transit-critical loads from Bus 2 to Bus 3 due to power shortfall.",
                 pickerEntries: [
-                    PickerEntry(color: .gray, name: "Chart", unit: " ", showIndicator: false),
-                    PickerEntry(color: .gray, name: "Schematic", unit: " ", showIndicator: false)
+                    PickerEntry(color: .black, name: "Chart", unit: " ", showIndicator: true),
+                    PickerEntry(color: .black, name: "Schematic", unit: " ", showIndicator: true)
                 ],
                 hintMessage: "If Bus 2 Power is not restored, Bus 3 expected to exceed safe limits in ",
                 hintHighlight: "52 minutes.",

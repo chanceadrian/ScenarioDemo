@@ -9,41 +9,37 @@ import SwiftUI
 
 struct AffectedSystemsView: View {
     @State private var expandedSections: Set<String> = ["Water Purifier"]
-
+    
+    private let proximateCauseItems: [(title: String, content: () -> AnyView)] = [
+        ("Water Purifier", { AnyView(WaterPurifierView()) })
+    ]
+    
+    private let downstreamImpactsItems: [(title: String, content: () -> AnyView)] = [
+        ("Power System", { AnyView(PowerSystemView()) }),
+        ("Power System Alt", { AnyView(PowerSystemViewAlt()) }),
+        ("Transit Phase", { AnyView(TransitPhaseView()) })
+    ]
+    
     var body: some View {
         List {
             Section(header: Text("Proximate Cause").font(.headline)) {
-                ExpandableListItem(
-                    title: "Water Purifier",
-                    isExpanded: expandedBinding(for: "Water Purifier"),
-                    content: {
-                        WaterPurifierView()
-                    }
-                )
+                ForEach(proximateCauseItems, id: \.title) { item in
+                    ExpandableListItem(
+                        title: item.title,
+                        isExpanded: expandedBinding(for: item.title),
+                        content: item.content
+                    )
+                }
             }
             
             Section(header: Text("Downstream Impacts").font(.headline)) {
-                ExpandableListItem(
-                    title: "Power System",
-                    isExpanded: expandedBinding(for: "Power System"),
-                    content: {
-                        PowerSystemView()
-                    }
-                )
-                ExpandableListItem(
-                    title: "Power System Alt",
-                    isExpanded: expandedBinding(for: "Power System Alt"),
-                    content: {
-                        PowerSystemViewAlt()
-                    }
-                )
-                ExpandableListItem(
-                    title: "Transit Phase",
-                    isExpanded: expandedBinding(for: "Transit Phase"),
-                    content: {
-                        TransitPhaseView()
-                    }
-                )
+                ForEach(downstreamImpactsItems, id: \.title) { item in
+                    ExpandableListItem(
+                        title: item.title,
+                        isExpanded: expandedBinding(for: item.title),
+                        content: item.content
+                    )
+                }
             }
         }
         .listStyle(.insetGrouped)
@@ -67,26 +63,31 @@ struct ExpandableListItem<Content: View>: View {
     let content: () -> Content
 
     var body: some View {
-        Section {
-            Button(action: { isExpanded.toggle() }) {
+        VStack(spacing: 0) {
+            Button(action: { withAnimation { isExpanded.toggle() } }) {
                 HStack {
-                    ProximateHeaderView(text: title)
+                    Text(title)
+                        .font(.body)
+                        .fontWeight(.semibold)
                     Spacer()
-                    Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
+                    Image(systemName: "chevron.right")
+                        .rotationEffect(.degrees(isExpanded ? 90 : 0))
                         .foregroundColor(.secondary)
                 }
                 .contentShape(Rectangle())
             }
             .buttonStyle(PlainButtonStyle())
-            
+
             if isExpanded {
                 content()
                     .padding(.leading)
+                    // .transition(.opacity)
             }
         }
+        // .animation(.spring(response: 0.38, dampingFraction: 0.74), value: isExpanded)
     }
 }
 
 #Preview {
-    AffectedSystemsView()
+    ContentView()
 }

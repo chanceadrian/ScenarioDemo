@@ -9,13 +9,15 @@
 import SwiftUI
 
 struct TimerView: View {
-    let timeRemaining: TimeInterval
+    private let originalDuration: TimeInterval = 3120 // 52 minutes
+    @State private var timeRemaining: TimeInterval = 3120
+    @State private var timer: Timer? = nil
     
     var body: some View {
         ZStack {
             // Background circle
             Circle()
-                .stroke(Color.secondary.opacity(0.3), lineWidth: 6)
+                .stroke(Color.secondary.opacity(0.3), lineWidth: 5)
                 .frame(width: 100, height: 100)
             
             // Progress circle
@@ -23,7 +25,7 @@ struct TimerView: View {
                 .trim(from: 0, to: progressValue)
                 .stroke(
                     timeRemaining > 0 ? Color.orange : Color.red,
-                    style: StrokeStyle(lineWidth: 6, lineCap: .round)
+                    style: StrokeStyle(lineWidth: 5, lineCap: .round)
                 )
                 .frame(width: 100, height: 100)
                 .rotationEffect(.degrees(-90))
@@ -50,18 +52,24 @@ struct TimerView: View {
             }
             .padding(.top, 8)
         }
+        .onAppear {
+            timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+                if timeRemaining > 0 {
+                    timeRemaining -= 1
+                } else {
+                    timer?.invalidate()
+                    timer = nil
+                }
+            }
+        }
+        .onDisappear {
+            timer?.invalidate()
+            timer = nil
+        }
     }
     
     private var progressValue: CGFloat {
-        // Calculate progress based on 60-minute clock face
-        let totalSeconds = Int(timeRemaining)
-        let minutes = (totalSeconds / 60) % 60
-        let seconds = totalSeconds % 60
-        
-        // Convert to progress around the circle (60 minutes = full circle)
-        let totalMinutesAndSeconds = Double(minutes) + Double(seconds) / 60.0
-        let progress = totalMinutesAndSeconds / 60.0
-        
+        let progress = max(0, timeRemaining / originalDuration)
         return CGFloat(progress)
     }
     
@@ -142,5 +150,5 @@ struct TimerView: View {
 }
 
 #Preview {
-    TimerView(timeRemaining: 2912) // 48:32 in seconds
+    TimerView()
 }

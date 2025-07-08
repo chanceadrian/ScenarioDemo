@@ -20,7 +20,7 @@ struct Timeline: View {
         TimelineEntry(time: "4:55 PM", message: "Water Purification pump impeller speed near 0 RPM."),
         TimelineEntry(time: "4:55 PM", message: "Water Purification pump draws higher current from Power Bus 2."),
         TimelineEntry(time: "4:56 PM", message: "Power Bus 2 available voltage drops below low threshold."),
-        TimelineEntry(time: "4:57 PM", message: "System reroutes Star Tracker and 13 other critical components from Bus 2 to Bus 3 to maintain transit operations."),
+        TimelineEntry(time: "4:57 PM", message: "System reroutes transit critical components from Bus 2 to Bus 3 to maintain transit operations."),
         TimelineEntry(time: "Now", message: "Power Bus 3 can hold rerouted components for 52 min before critical overload.")
     ]
 
@@ -47,7 +47,6 @@ struct Timeline: View {
                         }
                         .padding()
                         .frame(width: 220, alignment: .leading)
-                        .frame(maxHeight: 162)
                         .background(
                             Color(colorScheme == .dark ? .systemGray6 : .systemBackground)
                         )
