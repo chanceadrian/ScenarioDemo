@@ -13,7 +13,7 @@ struct PanelView: View {
     let panelTitle: String
     let panelSubtitle: String
     let pickerEntries: [PickerEntry]
-    let hintMessage: String
+    let hintMessage: String?
     let hintHighlight: String?
     let segmentedControl: AnyView?
     let isDataSelected: (() -> Bool)?
@@ -23,7 +23,7 @@ struct PanelView: View {
         panelTitle: String,
         panelSubtitle: String,
         pickerEntries: [PickerEntry],
-        hintMessage: String,
+        hintMessage: String? = nil,
         hintHighlight: String? = nil,
         segmentedControl: AnyView? = nil,
         isDataSelected: (() -> Bool)? = nil,
@@ -49,7 +49,9 @@ struct PanelView: View {
                 PickerView(entries: pickerEntries, selectedIndices: $selectedIndices)
                     .transition(.scale(scale: 0.92).combined(with: .opacity))
             }
-            HintView(message: hintMessage, highlight: hintHighlight)
+            if let hintMessage = hintMessage {
+                HintView(message: hintMessage, highlight: hintHighlight)
+            }
         }
         .animation(.spring(response: 0.38, dampingFraction: 0.74), value: isDataSelected?() ?? true)
         .frame(width: 290)

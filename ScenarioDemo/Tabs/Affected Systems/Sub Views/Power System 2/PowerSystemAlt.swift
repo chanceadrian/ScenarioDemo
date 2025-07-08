@@ -50,7 +50,7 @@ struct PowerSystemViewAlt: View {
             Color(colorScheme == .dark ? .systemGray6 : .systemBackground)
         )
         .frame(height: 640)
-        .cornerRadius(24)
+        .cornerRadius(26)
         
     }
 }

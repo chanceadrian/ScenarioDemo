@@ -20,6 +20,7 @@ struct ProximateCauseView: View {
                     ProximateHeaderView(text: "Downstream Impacts")
                     PowerSystemView()
                     PowerSystemViewAlt()
+                    TransitPhaseView()
                 }
                 Spacer()
             }
