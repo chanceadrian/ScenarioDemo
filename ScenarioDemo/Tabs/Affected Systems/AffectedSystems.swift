@@ -8,7 +8,8 @@
 import SwiftUI
 
 struct AffectedSystemsView: View {
-    @State private var expandedSections: Set<String> = ["Water Purifier"]
+    // All sections start closed
+    @State private var expandedSections: Set<String> = []
     
     private let proximateCauseItems: [(title: String, content: () -> AnyView)] = [
         ("Water Purifier", { AnyView(WaterPurifierView()) })
@@ -63,7 +64,9 @@ struct ExpandableListItem<Content: View>: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Button(action: { isExpanded.toggle() }) {
+            Button(action: {
+                isExpanded.toggle()
+            }) {
                 HStack {
                     Text(title)
                         .font(.body)
@@ -79,6 +82,8 @@ struct ExpandableListItem<Content: View>: View {
 
             if isExpanded {
                 content()
+                    .transition(.opacity.combined(with: .scale(scale: 1, anchor: .top)))
+                    .animation(.interpolatingSpring(stiffness: 35, damping: 20), value: isExpanded)
             }
         }
     }
