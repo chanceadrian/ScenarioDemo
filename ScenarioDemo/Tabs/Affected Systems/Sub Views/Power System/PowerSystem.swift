@@ -25,8 +25,8 @@ struct PowerSystemView: View {
                 ],
                 hintMessage: "If Bus 2 Power is not restored, Bus 3 expected to exceed safe limits in ",
                 hintHighlight: "52 minutes.",
-                segmentedControl: true,
-                schematicSelection: $schematicSelection,
+                segmentedControl: AnyView(DataSchematicSwitcher(selection: $schematicSelection)),
+                isDataSelected: { schematicSelection == 0 },
                 selectedIndices: $selectedIndices
             )
             

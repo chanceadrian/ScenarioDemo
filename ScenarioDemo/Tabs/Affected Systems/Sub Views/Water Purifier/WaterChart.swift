@@ -230,6 +230,17 @@ struct WaterChartSpeedView: View {
                 )
                 .symbol(Circle())
                 .foregroundStyle(showingSync ? Color(.systemGray3) : Color.mint)
+                
+                // Thresholds
+                let lowThreshold = 2100
+
+                // Low threshold line and zone
+                RuleMark(y: .value("lowThreshold", lowThreshold))
+                    .foregroundStyle(.gray)
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [6, 4]))
+                    .annotation(position: .top, alignment: .leading) {
+                        Text("Low").foregroundColor(.gray).font(.footnote)
+                    }
             }
             .chartXScale(domain: domain ?? (data.first?.time ?? Date())...(data.last?.time ?? Date()))
             .chartYAxis { AxisMarks(preset: .inset) }

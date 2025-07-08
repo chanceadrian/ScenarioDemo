@@ -23,7 +23,7 @@ struct PowerSystemViewAlt: View {
                 ],
                 hintMessage: "If Bus 2 Power is not restored, Bus 3 expected to exceed safe limits in ",
                 hintHighlight: "52 minutes.",
-                segmentedControl: false,
+                segmentedControl: nil,
                 selectedIndices: $selectedIndices
             )
             
@@ -77,3 +77,4 @@ struct DataSchematicSwitcherAlt: View {
             .padding()
     }
 }
+

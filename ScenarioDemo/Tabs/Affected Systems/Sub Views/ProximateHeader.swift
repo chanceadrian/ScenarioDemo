@@ -17,6 +17,7 @@ struct ProximateHeaderView: View {
                     .font(.title2)
                     .fontWeight(.semibold)
                     .padding(.horizontal,6)
+                    .padding(.bottom, -8)
                 Spacer()
             }
         }

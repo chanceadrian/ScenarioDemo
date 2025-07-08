@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-/// Expects DataSchematicSwitcher to be declared elsewhere in the project.
+typealias SegmentedControlBuilder = () -> AnyView
 
 struct PanelView: View {
     let panelTitle: String
@@ -15,19 +15,43 @@ struct PanelView: View {
     let pickerEntries: [PickerEntry]
     let hintMessage: String
     let hintHighlight: String?
-    let segmentedControl: Bool
-    var schematicSelection: Binding<Int>? = nil
+    let segmentedControl: AnyView?
+    let isDataSelected: (() -> Bool)?
     @Binding var selectedIndices: Set<Int>
+    
+    init(
+        panelTitle: String,
+        panelSubtitle: String,
+        pickerEntries: [PickerEntry],
+        hintMessage: String,
+        hintHighlight: String? = nil,
+        segmentedControl: AnyView? = nil,
+        isDataSelected: (() -> Bool)? = nil,
+        selectedIndices: Binding<Set<Int>>
+    ) {
+        self.panelTitle = panelTitle
+        self.panelSubtitle = panelSubtitle
+        self.pickerEntries = pickerEntries
+        self.hintMessage = hintMessage
+        self.hintHighlight = hintHighlight
+        self.segmentedControl = segmentedControl
+        self.isDataSelected = isDataSelected
+        self._selectedIndices = selectedIndices
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 34){
             PanelHeaderView(title: panelTitle, subtitle: panelSubtitle)
-            if segmentedControl {
-                DataSchematicSwitcher(selection: schematicSelection ?? .constant(0))
+            if let segmentedControl = segmentedControl {
+                segmentedControl
             }
-            PickerView(entries: pickerEntries, selectedIndices: $selectedIndices)
+            if isDataSelected?() ?? true {
+                PickerView(entries: pickerEntries, selectedIndices: $selectedIndices)
+                    .transition(.scale(scale: 0.92).combined(with: .opacity))
+            }
             HintView(message: hintMessage, highlight: hintHighlight)
         }
+        .animation(.spring(response: 0.38, dampingFraction: 0.74), value: isDataSelected?() ?? true)
         .frame(width: 290)
         .padding(.vertical, 8)
     }
@@ -67,7 +91,7 @@ struct PickerView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8){
-            ForEach(entries.indices, id: \.self) { index in
+            ForEach(Array(entries.indices), id: \.self) { index in
                 let entry = entries[index]
                 Button {
                     if selectedIndices.contains(index) {
@@ -129,4 +153,3 @@ struct HintView: View {
         }
     }
 }
-
