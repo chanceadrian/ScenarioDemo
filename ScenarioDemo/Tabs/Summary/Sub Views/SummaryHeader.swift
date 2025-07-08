@@ -12,7 +12,7 @@ struct SummaryHeaderView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                Text("Summary")
+                Text("Power System Anomaly")
                     .font(.largeTitle)
                     .fontWeight(.bold)
                 Spacer()
@@ -29,10 +29,10 @@ struct SummaryHeaderView: View {
             }
             HStack {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Power System Anomaly")
+                    Text("Recover Power Bus 2")
                         .font(.title2)
                         .fontWeight(.semibold)
-                    Text("52 minutes until Bus-3 overload. Bus-2 voltage critically low (95 V); essential systems rerouted to Bus-3 to maintain transit-phase operations.")
+                    Text("• 52 minutes until Bus-3 overload.\n• Bus-2 voltage critically low (95 V);\n• Essential systems rerouted to Bus-3 to maintain transit-phase operations.")
                         .font(.body)
                 }
                 .frame(maxWidth: 680, alignment: .leading)
