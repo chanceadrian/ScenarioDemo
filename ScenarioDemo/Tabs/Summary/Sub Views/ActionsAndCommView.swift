@@ -7,6 +7,8 @@
 import SwiftUI
 
 struct ActionsAndCommView: View {
+    @Environment(\.colorScheme) private var colorScheme
+    
     var body: some View {
         HStack(alignment: .top, spacing: 34) {
             // Left Column
@@ -26,7 +28,9 @@ struct ActionsAndCommView: View {
                 }
                 .padding(.horizontal)
                 .frame(height: 50)
-                .background(Color(.systemBackground))
+                .background(
+                    Color(colorScheme == .dark ? .systemGray6 : .systemBackground)
+                )
                 .cornerRadius(26)
 
                 Spacer(minLength: 0)
@@ -48,7 +52,9 @@ struct ActionsAndCommView: View {
                     }
                     .padding(.horizontal,20)
                     .frame(height: 50)
-                    .background(Color(.systemBackground))
+                    .background(
+                        Color(colorScheme == .dark ? .systemGray6 : .systemBackground)
+                    )
                     .cornerRadius(26)
                 }
 

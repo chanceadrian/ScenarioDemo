@@ -68,8 +68,8 @@ struct NextEffect: View {
                             Spacer()
                         }
                         .padding()
-                        .frame(width: idx == 0 ? 364 : 196, alignment: .leading)
-                        .frame(maxHeight: 154)
+                        .frame(width: idx == 0 ? 330 : 330, alignment: .leading)
+                        .frame(maxHeight: 162)
                         .background(
                             Color(colorScheme == .dark ? .systemGray6 : .systemBackground)
                         )
