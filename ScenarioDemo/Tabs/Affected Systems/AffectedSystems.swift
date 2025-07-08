@@ -16,7 +16,6 @@ struct AffectedSystemsView: View {
     
     private let downstreamImpactsItems: [(title: String, content: () -> AnyView)] = [
         ("Power System", { AnyView(PowerSystemView()) }),
-        ("Power System Alt", { AnyView(PowerSystemViewAlt()) }),
         ("Transit Phase", { AnyView(TransitPhaseView()) })
     ]
     
@@ -64,7 +63,7 @@ struct ExpandableListItem<Content: View>: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Button(action: { withAnimation { isExpanded.toggle() } }) {
+            Button(action: { isExpanded.toggle() }) {
                 HStack {
                     Text(title)
                         .font(.body)
@@ -80,11 +79,8 @@ struct ExpandableListItem<Content: View>: View {
 
             if isExpanded {
                 content()
-                    .padding(.leading)
-                    // .transition(.opacity)
             }
         }
-        // .animation(.spring(response: 0.38, dampingFraction: 0.74), value: isExpanded)
     }
 }
 
