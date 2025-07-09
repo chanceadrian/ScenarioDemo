@@ -19,6 +19,7 @@ struct PowerSystemChartView: View {
     @Binding var selectedIndices: Set<Int>
     
     @State private var lollipopTime: Date? = nil
+    @State private var showLollipop: Bool = false
     
     private var allData: [VoltageDataPoint] {
         PowerSystemChartView.generateBusData().sorted { $0.time < $1.time }
@@ -163,7 +164,7 @@ struct PowerSystemChartView: View {
     var body: some View {
         let realData = PowerSystemChartView.generateBusData()
         let chartDomain = timeDomain
-
+        
         VStack(alignment: .leading) {
             HStack {
                 Text("System Voltage")
@@ -173,21 +174,19 @@ struct PowerSystemChartView: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
-            HStack(spacing: 20) {
-                Button("Show Lollipop") {
-                    // Set to midpoint of chartDomain
-                    let midInterval = (chartDomain.lowerBound.timeIntervalSince1970 + chartDomain.upperBound.timeIntervalSince1970) / 2
-                    let midDate = Date(timeIntervalSince1970: midInterval)
-                    lollipopTime = midDate
+            
+            Toggle("Show Lollipop", isOn: $showLollipop.animation())
+                .toggleStyle(.switch)
+                .font(.caption)
+                .onChange(of: showLollipop) { newValue in
+                    if newValue {
+                        let midInterval = (chartDomain.lowerBound.timeIntervalSince1970 + chartDomain.upperBound.timeIntervalSince1970) / 2
+                        lollipopTime = Date(timeIntervalSince1970: midInterval)
+                    } else {
+                        lollipopTime = nil
+                    }
                 }
-                .disabled(lollipopTime != nil)
-                Button("Hide Lollipop") {
-                    lollipopTime = nil
-                }
-                .disabled(lollipopTime == nil)
-            }
-            .font(.caption)
-            .padding(.bottom, 4)
+            
             ZStack {
                 Chart {
                     ForEach([1, 2, 3], id: \.self) { busNumber in
@@ -247,7 +246,7 @@ struct PowerSystemChartView: View {
                 // Lollipop overlay
                 GeometryReader { geo in
                     ZStack {
-                        if let selectedTime = lollipopTime {
+                        if showLollipop, let selectedTime = lollipopTime {
                             let x = xPosition(for: selectedTime, in: geo.size, domain: chartDomain)
                             // Vertical lollipop line
                             Path { path in
@@ -294,11 +293,13 @@ struct PowerSystemChartView: View {
                     .gesture(
                         DragGesture(minimumDistance: 0)
                             .onChanged { value in
+                                guard showLollipop else { return }
                                 let relative = min(max(value.location.x / geo.size.width, 0), 1)
                                 let snappedTime = snapTime(relative: relative, domain: chartDomain)
                                 lollipopTime = snappedTime
                             }
                             .onEnded { value in
+                                guard showLollipop else { return }
                                 let relative = min(max(value.location.x / geo.size.width, 0), 1)
                                 let snappedTime = snapTime(relative: relative, domain: chartDomain)
                                 lollipopTime = snappedTime
