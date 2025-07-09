@@ -40,7 +40,7 @@ struct ContentView: View {
         content.body = "Bus 2 voltage at 95 V; essential systems moved to Bus 3 — 52 min until overload; earliest ground response in 37 minutes."
         content.sound = UNNotificationSound.default
         
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 2, repeats: false)
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 30, repeats: false)
         let request = UNNotificationRequest(identifier: "PowerAnomalyNotification", content: content, trigger: trigger)
         
         UNUserNotificationCenter.current().add(request) { error in

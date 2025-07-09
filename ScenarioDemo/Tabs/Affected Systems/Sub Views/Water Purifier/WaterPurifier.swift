@@ -53,7 +53,6 @@ struct WaterPurifierView: View {
         )
         .animation(.spring(response: 0.38, dampingFraction: 0.74), value: schematicSelection)
         .frame(height: 640)
-        .cornerRadius(26)
         
     }
 }

@@ -11,34 +11,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		7CE51A7D2E15AE38006ABBFF /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 7CE51A672E15AE37006ABBFF /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 7CE51A6E2E15AE37006ABBFF;
-			remoteInfo = ScenarioDemo;
-		};
-		7CE51A872E15AE38006ABBFF /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 7CE51A672E15AE37006ABBFF /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 7CE51A6E2E15AE37006ABBFF;
-			remoteInfo = ScenarioDemo;
-		};
-		8D557FBB2E1ECDB100561711 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 7CE51A672E15AE37006ABBFF /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 8D557FAD2E1ECDAF00561711;
-			remoteInfo = "Timer Watch App";
-		};
-		8D557FC52E1ECDB100561711 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 7CE51A672E15AE37006ABBFF /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 8D557FAD2E1ECDAF00561711;
-			remoteInfo = "Timer Watch App";
-		};
 		8D557FCC2E1ECDB100561711 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 7CE51A672E15AE37006ABBFF /* Project object */;
@@ -64,11 +36,7 @@
 
 /* Begin PBXFileReference section */
 		7CE51A6F2E15AE37006ABBFF /* ScenarioDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ScenarioDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		7CE51A7C2E15AE38006ABBFF /* ScenarioDemoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ScenarioDemoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		7CE51A862E15AE38006ABBFF /* ScenarioDemoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ScenarioDemoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8D557FAE2E1ECDAF00561711 /* Timer Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Timer Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
-		8D557FBA2E1ECDB100561711 /* Timer Watch AppTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Timer Watch AppTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
-		8D557FC42E1ECDB100561711 /* Timer Watch AppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Timer Watch AppUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -82,16 +50,6 @@
 			path = "Timer Watch App";
 			sourceTree = "<group>";
 		};
-		8D557FBD2E1ECDB100561711 /* Timer Watch AppTests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "Timer Watch AppTests";
-			sourceTree = "<group>";
-		};
-		8D557FC72E1ECDB100561711 /* Timer Watch AppUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = "Timer Watch AppUITests";
-			sourceTree = "<group>";
-		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -102,35 +60,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		7CE51A792E15AE38006ABBFF /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		7CE51A832E15AE38006ABBFF /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		8D557FAB2E1ECDAF00561711 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		8D557FB72E1ECDB100561711 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		8D557FC12E1ECDB100561711 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -145,8 +75,6 @@
 			children = (
 				7CE51A712E15AE37006ABBFF /* ScenarioDemo */,
 				8D557FAF2E1ECDAF00561711 /* Timer Watch App */,
-				8D557FBD2E1ECDB100561711 /* Timer Watch AppTests */,
-				8D557FC72E1ECDB100561711 /* Timer Watch AppUITests */,
 				7CE51A702E15AE37006ABBFF /* Products */,
 			);
 			sourceTree = "<group>";
@@ -155,11 +83,7 @@
 			isa = PBXGroup;
 			children = (
 				7CE51A6F2E15AE37006ABBFF /* ScenarioDemo.app */,
-				7CE51A7C2E15AE38006ABBFF /* ScenarioDemoTests.xctest */,
-				7CE51A862E15AE38006ABBFF /* ScenarioDemoUITests.xctest */,
 				8D557FAE2E1ECDAF00561711 /* Timer Watch App.app */,
-				8D557FBA2E1ECDB100561711 /* Timer Watch AppTests.xctest */,
-				8D557FC42E1ECDB100561711 /* Timer Watch AppUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -191,46 +115,6 @@
 			productReference = 7CE51A6F2E15AE37006ABBFF /* ScenarioDemo.app */;
 			productType = "com.apple.product-type.application";
 		};
-		7CE51A7B2E15AE38006ABBFF /* ScenarioDemoTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 7CE51A932E15AE38006ABBFF /* Build configuration list for PBXNativeTarget "ScenarioDemoTests" */;
-			buildPhases = (
-				7CE51A782E15AE38006ABBFF /* Sources */,
-				7CE51A792E15AE38006ABBFF /* Frameworks */,
-				7CE51A7A2E15AE38006ABBFF /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				7CE51A7E2E15AE38006ABBFF /* PBXTargetDependency */,
-			);
-			name = ScenarioDemoTests;
-			packageProductDependencies = (
-			);
-			productName = ScenarioDemoTests;
-			productReference = 7CE51A7C2E15AE38006ABBFF /* ScenarioDemoTests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
-		};
-		7CE51A852E15AE38006ABBFF /* ScenarioDemoUITests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 7CE51A962E15AE38006ABBFF /* Build configuration list for PBXNativeTarget "ScenarioDemoUITests" */;
-			buildPhases = (
-				7CE51A822E15AE38006ABBFF /* Sources */,
-				7CE51A832E15AE38006ABBFF /* Frameworks */,
-				7CE51A842E15AE38006ABBFF /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				7CE51A882E15AE38006ABBFF /* PBXTargetDependency */,
-			);
-			name = ScenarioDemoUITests;
-			packageProductDependencies = (
-			);
-			productName = ScenarioDemoUITests;
-			productReference = 7CE51A862E15AE38006ABBFF /* ScenarioDemoUITests.xctest */;
-			productType = "com.apple.product-type.bundle.ui-testing";
-		};
 		8D557FAD2E1ECDAF00561711 /* Timer Watch App */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8D557FD62E1ECDB100561711 /* Build configuration list for PBXNativeTarget "Timer Watch App" */;
@@ -253,52 +137,6 @@
 			productReference = 8D557FAE2E1ECDAF00561711 /* Timer Watch App.app */;
 			productType = "com.apple.product-type.application";
 		};
-		8D557FB92E1ECDB100561711 /* Timer Watch AppTests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 8D557FD72E1ECDB100561711 /* Build configuration list for PBXNativeTarget "Timer Watch AppTests" */;
-			buildPhases = (
-				8D557FB62E1ECDB100561711 /* Sources */,
-				8D557FB72E1ECDB100561711 /* Frameworks */,
-				8D557FB82E1ECDB100561711 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				8D557FBC2E1ECDB100561711 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				8D557FBD2E1ECDB100561711 /* Timer Watch AppTests */,
-			);
-			name = "Timer Watch AppTests";
-			packageProductDependencies = (
-			);
-			productName = "Timer Watch AppTests";
-			productReference = 8D557FBA2E1ECDB100561711 /* Timer Watch AppTests.xctest */;
-			productType = "com.apple.product-type.bundle.unit-test";
-		};
-		8D557FC32E1ECDB100561711 /* Timer Watch AppUITests */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 8D557FD82E1ECDB100561711 /* Build configuration list for PBXNativeTarget "Timer Watch AppUITests" */;
-			buildPhases = (
-				8D557FC02E1ECDB100561711 /* Sources */,
-				8D557FC12E1ECDB100561711 /* Frameworks */,
-				8D557FC22E1ECDB100561711 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-				8D557FC62E1ECDB100561711 /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				8D557FC72E1ECDB100561711 /* Timer Watch AppUITests */,
-			);
-			name = "Timer Watch AppUITests";
-			packageProductDependencies = (
-			);
-			productName = "Timer Watch AppUITests";
-			productReference = 8D557FC42E1ECDB100561711 /* Timer Watch AppUITests.xctest */;
-			productType = "com.apple.product-type.bundle.ui-testing";
-		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -312,24 +150,8 @@
 					7CE51A6E2E15AE37006ABBFF = {
 						CreatedOnToolsVersion = 26.0;
 					};
-					7CE51A7B2E15AE38006ABBFF = {
-						CreatedOnToolsVersion = 26.0;
-						TestTargetID = 7CE51A6E2E15AE37006ABBFF;
-					};
-					7CE51A852E15AE38006ABBFF = {
-						CreatedOnToolsVersion = 26.0;
-						TestTargetID = 7CE51A6E2E15AE37006ABBFF;
-					};
 					8D557FAD2E1ECDAF00561711 = {
 						CreatedOnToolsVersion = 26.0;
-					};
-					8D557FB92E1ECDB100561711 = {
-						CreatedOnToolsVersion = 26.0;
-						TestTargetID = 8D557FAD2E1ECDAF00561711;
-					};
-					8D557FC32E1ECDB100561711 = {
-						CreatedOnToolsVersion = 26.0;
-						TestTargetID = 8D557FAD2E1ECDAF00561711;
 					};
 				};
 			};
@@ -348,11 +170,7 @@
 			projectRoot = "";
 			targets = (
 				7CE51A6E2E15AE37006ABBFF /* ScenarioDemo */,
-				7CE51A7B2E15AE38006ABBFF /* ScenarioDemoTests */,
-				7CE51A852E15AE38006ABBFF /* ScenarioDemoUITests */,
 				8D557FAD2E1ECDAF00561711 /* Timer Watch App */,
-				8D557FB92E1ECDB100561711 /* Timer Watch AppTests */,
-				8D557FC32E1ECDB100561711 /* Timer Watch AppUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -365,35 +183,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		7CE51A7A2E15AE38006ABBFF /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		7CE51A842E15AE38006ABBFF /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		8D557FAC2E1ECDAF00561711 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		8D557FB82E1ECDB100561711 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		8D557FC22E1ECDB100561711 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -410,35 +200,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		7CE51A782E15AE38006ABBFF /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		7CE51A822E15AE38006ABBFF /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		8D557FAA2E1ECDAF00561711 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		8D557FB62E1ECDB100561711 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-		8D557FC02E1ECDB100561711 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -448,26 +210,6 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		7CE51A7E2E15AE38006ABBFF /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 7CE51A6E2E15AE37006ABBFF /* ScenarioDemo */;
-			targetProxy = 7CE51A7D2E15AE38006ABBFF /* PBXContainerItemProxy */;
-		};
-		7CE51A882E15AE38006ABBFF /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 7CE51A6E2E15AE37006ABBFF /* ScenarioDemo */;
-			targetProxy = 7CE51A872E15AE38006ABBFF /* PBXContainerItemProxy */;
-		};
-		8D557FBC2E1ECDB100561711 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 8D557FAD2E1ECDAF00561711 /* Timer Watch App */;
-			targetProxy = 8D557FBB2E1ECDB100561711 /* PBXContainerItemProxy */;
-		};
-		8D557FC62E1ECDB100561711 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 8D557FAD2E1ECDAF00561711 /* Timer Watch App */;
-			targetProxy = 8D557FC52E1ECDB100561711 /* PBXContainerItemProxy */;
-		};
 		8D557FCD2E1ECDB100561711 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 8D557FAD2E1ECDAF00561711 /* Timer Watch App */;
@@ -604,7 +346,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = HCP83V9NAN;
+				DEVELOPMENT_TEAM = KC6KJ558HZ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -617,7 +359,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.nasa.ScenarioDemo1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nasa.ScenarioDemo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
@@ -635,7 +377,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = HCP83V9NAN;
+				DEVELOPMENT_TEAM = KC6KJ558HZ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -659,86 +401,6 @@
 			};
 			name = Release;
 		};
-		7CE51A942E15AE38006ABBFF /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = KC6KJ558HZ;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.nasa.ScenarioDemoTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ScenarioDemo.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ScenarioDemo";
-			};
-			name = Debug;
-		};
-		7CE51A952E15AE38006ABBFF /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = KC6KJ558HZ;
-				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.nasa.ScenarioDemoTests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ScenarioDemo.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ScenarioDemo";
-			};
-			name = Release;
-		};
-		7CE51A972E15AE38006ABBFF /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = KC6KJ558HZ;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.nasa.ScenarioDemoUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = ScenarioDemo;
-			};
-			name = Debug;
-		};
-		7CE51A982E15AE38006ABBFF /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = KC6KJ558HZ;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.nasa.ScenarioDemoUITests;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-				TEST_TARGET_NAME = ScenarioDemo;
-			};
-			name = Release;
-		};
 		8D557FD02E1ECDB100561711 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -746,18 +408,18 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = HCP83V9NAN;
+				DEVELOPMENT_TEAM = KC6KJ558HZ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Timer;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.nasa.ScenarioDemo1;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.nasa.ScenarioDemo;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.nasa.ScenarioDemo1.watchkitapp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nasa.ScenarioDemo.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -778,18 +440,18 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = HCP83V9NAN;
+				DEVELOPMENT_TEAM = KC6KJ558HZ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = Timer;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.nasa.ScenarioDemo1;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.nasa.ScenarioDemo;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.nasa.ScenarioDemo1.watchkitapp;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nasa.ScenarioDemo.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -799,92 +461,6 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
-				WATCHOS_DEPLOYMENT_TARGET = 26.0;
-			};
-			name = Release;
-		};
-		8D557FD22E1ECDB100561711 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = HCP83V9NAN;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.evolone.ScenarioKit.Timer-Watch-AppTests";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = watchos;
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 4;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Timer Watch App.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Timer Watch App";
-				WATCHOS_DEPLOYMENT_TARGET = 26.0;
-			};
-			name = Debug;
-		};
-		8D557FD32E1ECDB100561711 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				BUNDLE_LOADER = "$(TEST_HOST)";
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = HCP83V9NAN;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.evolone.ScenarioKit.Timer-Watch-AppTests";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = watchos;
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 4;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Timer Watch App.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Timer Watch App";
-				WATCHOS_DEPLOYMENT_TARGET = 26.0;
-			};
-			name = Release;
-		};
-		8D557FD42E1ECDB100561711 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = HCP83V9NAN;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.evolone.ScenarioKit.Timer-Watch-AppUITests";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = watchos;
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 4;
-				TEST_TARGET_NAME = "Timer Watch App";
-				WATCHOS_DEPLOYMENT_TARGET = 26.0;
-			};
-			name = Debug;
-		};
-		8D557FD52E1ECDB100561711 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = HCP83V9NAN;
-				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "com.evolone.ScenarioKit.Timer-Watch-AppUITests";
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = watchos;
-				STRING_CATALOG_GENERATE_SYMBOLS = NO;
-				SWIFT_EMIT_LOC_STRINGS = NO;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = 4;
-				TEST_TARGET_NAME = "Timer Watch App";
 				WATCHOS_DEPLOYMENT_TARGET = 26.0;
 			};
 			name = Release;
@@ -910,47 +486,11 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		7CE51A932E15AE38006ABBFF /* Build configuration list for PBXNativeTarget "ScenarioDemoTests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				7CE51A942E15AE38006ABBFF /* Debug */,
-				7CE51A952E15AE38006ABBFF /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		7CE51A962E15AE38006ABBFF /* Build configuration list for PBXNativeTarget "ScenarioDemoUITests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				7CE51A972E15AE38006ABBFF /* Debug */,
-				7CE51A982E15AE38006ABBFF /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		8D557FD62E1ECDB100561711 /* Build configuration list for PBXNativeTarget "Timer Watch App" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				8D557FD02E1ECDB100561711 /* Debug */,
 				8D557FD12E1ECDB100561711 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		8D557FD72E1ECDB100561711 /* Build configuration list for PBXNativeTarget "Timer Watch AppTests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				8D557FD22E1ECDB100561711 /* Debug */,
-				8D557FD32E1ECDB100561711 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		8D557FD82E1ECDB100561711 /* Build configuration list for PBXNativeTarget "Timer Watch AppUITests" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				8D557FD42E1ECDB100561711 /* Debug */,
-				8D557FD52E1ECDB100561711 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
