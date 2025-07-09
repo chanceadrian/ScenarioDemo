@@ -18,17 +18,38 @@ struct VoltageDataPoint: Identifiable {
 struct PowerSystemChartView: View {
     @Binding var selectedIndices: Set<Int>
     
+    @State private var lollipopTime: Date? = nil
+    
+    private var allData: [VoltageDataPoint] {
+        PowerSystemChartView.generateBusData().sorted { $0.time < $1.time }
+    }
+    
+    private var allTimes: [Date] {
+        Array(Set(allData.map { $0.time })).sorted()
+    }
+    
     // Compute shared time domain like water purifier
     private var timeDomain: ClosedRange<Date> {
         let realTimes = PowerSystemChartView.generateBusData().map { $0.time }
         return computePaddedTimeDomain([realTimes])
     }
     
+    static var cachedBus2Voltages: [Double]? = nil
+    
     static func generateBusData() -> [VoltageDataPoint] {
         let calendar = Calendar.current
         let today = Date()
         let startComponents = calendar.dateComponents([.year, .month, .day], from: today)
         let startTime = calendar.date(bySettingHour: 16, minute: 41, second: 0, of: calendar.date(from: startComponents)!)!
+        
+        // Cache deterministic random voltages for Bus 2 after i == 10 (indices 11-19)
+        if cachedBus2Voltages == nil {
+            var cachedVals = [Double]()
+            for _ in 11..<20 {
+                cachedVals.append(6 + Double.random(in: 0...4))
+            }
+            cachedBus2Voltages = cachedVals
+        }
         
         var allPoints = [VoltageDataPoint]()
         
@@ -54,7 +75,7 @@ struct PowerSystemChartView: View {
             } else if i == 10 {
                 voltage = 8 // sharp drop
             } else {
-                voltage = 6 + Double.random(in: 0...4) // hover just above 0
+                voltage = PowerSystemChartView.cachedBus2Voltages![i - 11]
             }
             allPoints.append(VoltageDataPoint(time: time, voltage: voltage, isPredicted: false, busNumber: 2))
         }
@@ -141,6 +162,7 @@ struct PowerSystemChartView: View {
     
     var body: some View {
         let realData = PowerSystemChartView.generateBusData()
+        let chartDomain = timeDomain
         
         VStack(alignment: .leading) {
             HStack {
@@ -152,66 +174,134 @@ struct PowerSystemChartView: View {
                     .foregroundColor(.secondary)
             }
             
-            Chart {
-                ForEach([1, 2, 3], id: \.self) { busNumber in
-                    if selectedIndices.contains(busNumber - 1) {
-                        ForEach(realData.filter { $0.busNumber == busNumber }) { point in
-                            LineMark(
-                                x: .value("Time", point.time),
-                                y: .value("Voltage", point.voltage),
-                                series: .value("Series", "Bus\(busNumber)Real")
-                            )
-                            .foregroundStyle(busColor(busNumber))
-                            .lineStyle(StrokeStyle(lineWidth: 2))
+            ZStack {
+                Chart {
+                    ForEach([1, 2, 3], id: \.self) { busNumber in
+                        if selectedIndices.contains(busNumber - 1) {
+                            ForEach(realData.filter { $0.busNumber == busNumber }) { point in
+                                LineMark(
+                                    x: .value("Time", point.time),
+                                    y: .value("Voltage", point.voltage),
+                                    series: .value("Series", "Bus\(busNumber)Real")
+                                )
+                                .foregroundStyle(busColor(busNumber))
+                                .lineStyle(StrokeStyle(lineWidth: 2))
+                            }
+                            ForEach(realData.filter { $0.busNumber == busNumber }) { point in
+                                PointMark(
+                                    x: .value("Time", point.time),
+                                    y: .value("Voltage", point.voltage)
+                                )
+                                .symbol(busNumber == 1 ? .circle : busNumber == 2 ? .square : .triangle)
+                                .foregroundStyle(busColor(busNumber))
+                            }
                         }
-                        
-                        ForEach(realData.filter { $0.busNumber == busNumber }) { point in
-                            PointMark(
-                                x: .value("Time", point.time),
-                                y: .value("Voltage", point.voltage)
-                            )
-                            .symbol(busNumber == 1 ? .circle : busNumber == 2 ? .square : .triangle)
-                            .foregroundStyle(busColor(busNumber))
+                    }
+                    let highThreshold = 310.0
+                    let lowThreshold = 80.0
+                    RuleMark(y: .value("highThreshold", highThreshold))
+                        .foregroundStyle(.orange)
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [6, 4]))
+                        .annotation(position: .top, alignment: .leading) {
+                            Text("Overload").foregroundColor(.orange).font(.footnote)
+                        }
+                    RuleMark(y: .value("lowThreshold", lowThreshold))
+                        .foregroundStyle(.gray)
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [6, 4]))
+                        .annotation(position: .top, alignment: .leading) {
+                            Text("Low").foregroundColor(.gray).font(.footnote)
+                        }
+                }
+                .chartXScale(domain: chartDomain)
+                .chartYScale(domain: 0...350)
+                .chartYAxis {
+                    AxisMarks(preset: .inset) { value in
+                        AxisGridLine()
+                        AxisValueLabel()
+                    }
+                }
+                .chartXAxis {
+                    AxisMarks(values: .stride(by: .minute, count: 3)) { value in
+                        AxisGridLine()
+                        AxisValueLabel() {
+                            if let date = value.as(Date.self) {
+                                Text(date, format: .dateTime.hour(.defaultDigits(amPM: .abbreviated)).minute())
+                            }
                         }
                     }
                 }
-                
-                // Thresholds
-                let highThreshold = 310.0
-                let lowThreshold = 80.0
-
-                // High threshold line and zone
-                RuleMark(y: .value("highThreshold", highThreshold))
-                    .foregroundStyle(.orange)
-                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [6, 4]))
-                    .annotation(position: .top, alignment: .leading) {
-                        Text("Overload").foregroundColor(.orange).font(.footnote)
-                    }
-
-                // Low threshold line and zone
-                RuleMark(y: .value("lowThreshold", lowThreshold))
-                    .foregroundStyle(.gray)
-                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [6, 4]))
-                    .annotation(position: .top, alignment: .leading) {
-                        Text("Low").foregroundColor(.gray).font(.footnote)
-                    }
-            }
-            .chartXScale(domain: timeDomain)
-            .chartYScale(domain: 0...350)
-            .chartYAxis {
-                AxisMarks(preset: .inset) { value in
-                    AxisGridLine()
-                    AxisValueLabel()
-                }
-            }
-            .chartXAxis {
-                AxisMarks(values: .stride(by: .minute, count: 3)) { value in
-                    AxisGridLine()
-                    AxisValueLabel() {
-                        if let date = value.as(Date.self) {
-                            Text(date, format: .dateTime.hour(.defaultDigits(amPM: .abbreviated)).minute())
+                // Lollipop overlay
+                GeometryReader { geo in
+                    ZStack {
+                        Rectangle()
+                            .opacity(0.01)
+                            .contentShape(Rectangle())
+                            .gesture(
+                                DragGesture(minimumDistance: 0)
+                                    .onChanged { value in
+                                        let relative = min(max(value.location.x / geo.size.width, 0), 1)
+                                        let snappedTime = snapTime(relative: relative, domain: chartDomain)
+                                        lollipopTime = snappedTime
+                                    }
+                                    .onEnded { value in
+                                        let relative = min(max(value.location.x / geo.size.width, 0), 1)
+                                        let snappedTime = snapTime(relative: relative, domain: chartDomain)
+                                        lollipopTime = snappedTime
+                                    }
+                            )
+                        if let selectedTime = lollipopTime {
+                            let x = xPosition(for: selectedTime, in: geo.size, domain: chartDomain)
+                            // Vertical lollipop line
+                            Path { path in
+                                path.move(to: CGPoint(x: x, y: 0))
+                                path.addLine(to: CGPoint(x: x, y: geo.size.height))
+                            }
+                            .stroke(Color.primary, style: StrokeStyle(lineWidth: 2, dash: [2,2]))
+                            // Single combined bubble above line
+                            let valueTexts = [1, 2, 3].compactMap { bus -> String? in
+                                guard selectedIndices.contains(bus - 1),
+                                      let pt = valuePoint(for: bus, at: selectedTime) else { return nil }
+                                return "Bus\(bus): \(String(format: "%.1f", pt.voltage)) V"
+                            }
+                            if !valueTexts.isEmpty {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    HStack(alignment: .top) {
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(selectedTime, style: .time)
+                                                .font(.caption)
+                                                .bold()
+                                            ForEach([1, 2, 3], id: \.self) { bus in
+                                                if selectedIndices.contains(bus - 1), let pt = valuePoint(for: bus, at: selectedTime) {
+                                                    HStack(spacing: 6) {
+                                                        Image(systemName: sfSymbolName(for: bus))
+                                                            .font(.caption2)
+                                                            .foregroundColor(busColor(bus))
+                                                        Text("Bus \(bus): \(String(format: "%.1f", pt.voltage)) V")
+                                                            .font(.caption2)
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        Spacer()
+                                    }
+                                }
+                                .padding(8)
+                                .background(Color(.systemBackground).opacity(0.96))
+                                .cornerRadius(12)
+                                .shadow(radius: 3)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12).stroke(Color.gray, lineWidth: 1)
+                                )
+                                .frame(maxWidth: 140)
+                                .position(x: min(max(x + 70, 70), geo.size.width - 70), y: 40)
+                                .onTapGesture {
+                                    lollipopTime = nil
+                                }
+                                .transition(.opacity)
+                            }
                         }
                     }
+                    .animation(.easeInOut(duration: 0.2), value: lollipopTime)
                 }
             }
         }
@@ -223,6 +313,37 @@ struct PowerSystemChartView: View {
         case 2: return .mint
         case 3: return .cyan
         default: return .primary
+        }
+    }
+    
+    private func valuePoint(for bus: Int, at time: Date) -> VoltageDataPoint? {
+        allData.filter { $0.busNumber == bus }
+            .min(by: { abs($0.time.timeIntervalSince(time)) < abs($1.time.timeIntervalSince(time)) })
+    }
+    
+    private func xPosition(for time: Date, in size: CGSize, domain: ClosedRange<Date>) -> CGFloat {
+        let t = (time.timeIntervalSince1970 - domain.lowerBound.timeIntervalSince1970) /
+                (domain.upperBound.timeIntervalSince1970 - domain.lowerBound.timeIntervalSince1970)
+        return CGFloat(t) * size.width
+    }
+    
+    private func yPosition(for voltage: Double, chartHeight: CGFloat) -> CGFloat {
+        // y = 0 is top, voltage 0 at bottom, 350 at top
+        return chartHeight * CGFloat(1.0 - (voltage / 350.0))
+    }
+    
+    private func snapTime(relative: CGFloat, domain: ClosedRange<Date>) -> Date {
+        let target = domain.lowerBound.timeIntervalSince1970 + Double(relative) * (domain.upperBound.timeIntervalSince1970 - domain.lowerBound.timeIntervalSince1970)
+        let closest = allTimes.min(by: { abs($0.timeIntervalSince1970 - target) < abs($1.timeIntervalSince1970 - target) })
+        return closest ?? domain.lowerBound
+    }
+    
+    private func sfSymbolName(for bus: Int) -> String {
+        switch bus {
+        case 1: return "circle.fill"
+        case 2: return "square.fill"
+        case 3: return "triangle.fill"
+        default: return "questionmark"
         }
     }
 }
