@@ -30,10 +30,17 @@ struct WaterPurifierView: View {
                 selectedIndices: $selectedIndices
             )
             VStack(spacing: 0) {
-                if schematicSelection == 1 {
-                    WaterPurifierLogView()
-                } else {
+                if schematicSelection == 0 {
+                    Image(colorScheme == .dark ? "verticalDark" : "verticalLight")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .transition(.scale(scale: 0.92).combined(with: .opacity))
+                        .padding(.top, (schematicSelection == 1 || schematicSelection == 2) ? 16 : 0)
+                } else if schematicSelection == 1 {
                     WaterChartView(selectedIndices: selectedIndices)
+                } else if schematicSelection == 2 {
+                    WaterPurifierLogView()
                 }
             }
             .clipped()
@@ -53,7 +60,7 @@ struct WaterPurifierView: View {
 
 struct DataLogSwitcher: View {
     @Binding var selection: Int
-    let options = ["Data", "Logs"]
+    let options = ["Schematic", "Data", "Logs"]
     
     var body: some View {
         Picker("Mode", selection: Binding(get: { selection }, set: { newValue in
@@ -124,3 +131,4 @@ struct WaterPurifierLogView: View {
         WaterPurifierView()
     }
 }
+
