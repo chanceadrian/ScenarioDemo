@@ -29,16 +29,14 @@ struct WaterPurifierView: View {
                 isDataSelected: { schematicSelection == 0 },
                 selectedIndices: $selectedIndices
             )
-            ZStack {
+            VStack(spacing: 0) {
                 if schematicSelection == 1 {
                     WaterPurifierLogView()
-                        .transition(.scale(scale: 0.92).combined(with: .opacity))
                 } else {
                     WaterChartView(selectedIndices: selectedIndices)
-                        .transition(.scale(scale: 0.92).combined(with: .opacity))
                 }
             }
-            .animation(.spring(response: 0.38, dampingFraction: 0.74), value: schematicSelection)
+            .clipped()
         }
         .padding(.horizontal, 20)
         .padding(.top, 16)
@@ -46,6 +44,7 @@ struct WaterPurifierView: View {
         .background(
             Color(colorScheme == .dark ? .systemGray6 : .systemBackground)
         )
+        .animation(.spring(response: 0.38, dampingFraction: 0.74), value: schematicSelection)
         .frame(height: 640)
         .cornerRadius(26)
         
@@ -57,7 +56,11 @@ struct DataLogSwitcher: View {
     let options = ["Data", "Logs"]
     
     var body: some View {
-        Picker("Mode", selection: $selection) {
+        Picker("Mode", selection: Binding(get: { selection }, set: { newValue in
+            withAnimation(.spring(response: 0.38, dampingFraction: 0.74)) {
+                selection = newValue
+            }
+        })) {
             ForEach(0..<options.count, id: \.self) { index in
                 Text(options[index]).tag(index)
             }

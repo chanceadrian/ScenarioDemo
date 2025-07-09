@@ -7,60 +7,66 @@
 
 import SwiftUI
 
-struct AffectedSystemsView: View {
-    // All sections start closed
-    @State private var expandedSections: Set<String> = []
-    
-    private let proximateCauseItems: [(title: String, content: () -> AnyView)] = [
-        ("Water Purifier", { AnyView(WaterPurifierView()) })
-    ]
-    
-    private let downstreamImpactsItems: [(title: String, content: () -> AnyView)] = [
-        ("Power System", { AnyView(PowerSystemView()) }),
-        ("Transit Phase", { AnyView(TransitPhaseView()) })
-    ]
-    
-    var body: some View {
-        List {
-            Section(header: Text("Proximate Cause").font(.headline)) {
-                ForEach(proximateCauseItems, id: \.title) { item in
-                    ExpandableListItem(
-                        title: item.title,
-                        isExpanded: expandedBinding(for: item.title),
-                        content: item.content
-                    )
-                }
-            }
-            
-            Section(header: Text("Downstream Impacts").font(.headline)) {
-                ForEach(downstreamImpactsItems, id: \.title) { item in
-                    ExpandableListItem(
-                        title: item.title,
-                        isExpanded: expandedBinding(for: item.title),
-                        content: item.content
-                    )
-                }
-            }
-        }
-        .listStyle(.insetGrouped)
-        .background(Color(.systemGroupedBackground))
-    }
+// MARK: - Main View
 
-    private func expandedBinding(for section: String) -> Binding<Bool> {
-        Binding<Bool>(
-            get: { expandedSections.contains(section) },
-            set: { expanded in
-                if expanded { expandedSections.insert(section) }
-                else { expandedSections.remove(section) }
+struct AffectedSystemsView: View {
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+
+                // Proximate Cause
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Proximate Cause")
+                        .font(.body)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.secondary)
+                        .padding(.vertical, 10)
+                        .padding(.horizontal)
+
+                    ExpandableListItem(title: "Water Purifier") {
+                        WaterPurifierView()
+                    }
+                }
+
+                // Downstream Impacts
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Downstream Impacts")
+                        .font(.body)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.secondary)
+                        .padding(.vertical, 10)
+                        .padding(.horizontal)
+
+                    VStack(spacing: 0) {
+                        ExpandableListItem(title: "Power System") {
+                            PowerSystemView()
+                        }
+                        Divider()
+                            .padding(.leading)
+                        ExpandableListItem(title: "Transit Phase") {
+                            TransitPhaseView()
+                        }
+                    }
+                    .background(
+                        RoundedRectangle(cornerRadius: 26, style: .continuous)
+                            .fill(Color(.systemBackground))
+                    )
+
+
+                }
             }
-        )
+            .padding(.horizontal)
+        }
+        .background(Color(.systemGroupedBackground).ignoresSafeArea())
     }
 }
 
+// MARK: - Expandable Card-Style Row
+
 struct ExpandableListItem<Content: View>: View {
     let title: String
-    @Binding var isExpanded: Bool
     let content: () -> Content
+    @State private var isExpanded: Bool = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -76,9 +82,10 @@ struct ExpandableListItem<Content: View>: View {
                         .rotationEffect(.degrees(isExpanded ? 90 : 0))
                         .foregroundColor(.secondary)
                 }
-                .contentShape(Rectangle())
+                .padding(.horizontal, 16)
+                .padding(.vertical, 15)
             }
-            .buttonStyle(PlainButtonStyle())
+            .buttonStyle(.plain)
 
             if isExpanded {
                 content()
@@ -86,9 +93,13 @@ struct ExpandableListItem<Content: View>: View {
                     .animation(.interpolatingSpring(stiffness: 35, damping: 20), value: isExpanded)
             }
         }
+        .background(Color(.systemBackground))
+        .cornerRadius(26)
+        .animation(.spring(response: 0.3, dampingFraction: 0.9), value: isExpanded)
     }
 }
 
 #Preview {
     ContentView()
 }
+
