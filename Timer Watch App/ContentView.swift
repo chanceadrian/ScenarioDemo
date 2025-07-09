@@ -17,6 +17,8 @@ struct ContentView: View {
                 Button(action: handleButtonPress) {
                     Label("Start Scenario", systemImage: "play.fill")
                 }
+                .buttonStyle(.bordered)
+                .tint(.orange)
             } else {
                 EmptyView()
             }
@@ -37,10 +39,10 @@ struct ContentView: View {
     func scheduleScenarioNotification() {
         let content = UNMutableNotificationContent()
         content.title = "Power Anomaly"
-        content.body = "Bus 2 voltage at 95 V; essential systems moved to Bus 3 — 52 min until overload; earliest ground response in 37 minutes."
+        content.body = "Bus 2 voltage at 95 V; essential systems moved to Bus 3 — 52 min until overload; earliest ground response in 37 minutes.\n\nView on iPad."
         content.sound = UNNotificationSound.default
         
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 30, repeats: false)
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
         let request = UNNotificationRequest(identifier: "PowerAnomalyNotification", content: content, trigger: trigger)
         
         UNUserNotificationCenter.current().add(request) { error in
