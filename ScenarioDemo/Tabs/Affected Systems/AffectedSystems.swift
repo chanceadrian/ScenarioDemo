@@ -12,8 +12,20 @@ import SwiftUI
 struct AffectedSystemsView: View {
     var body: some View {
         ScrollView {
-            VStack(spacing: 20) {
+            VStack(alignment: .leading, spacing: 20) {
 
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Affected Systems")
+                        .font(.title)
+                        .fontWeight(.semibold)
+                    VStack(alignment: .leading, spacing: 4) {
+                        (Text("Water Purifier:").fontWeight(.semibold) + Text(" Low impeller speed, high power draw."))
+                        (Text("Power Bus 3:").fontWeight(.semibold) + Text(" Overload in 52 minutes."))
+                        (Text("Transit Phase Components:").fontWeight(.semibold) + Text(" Rerouted to Bus-3 to maintain operations."))
+                    }
+                    .font(.body)
+                }
+                
                 // Proximate Cause
                 VStack(alignment: .leading, spacing: 0) {
                     Text("Proximate Cause")
@@ -43,7 +55,7 @@ struct AffectedSystemsView: View {
                         }
                         Divider()
                             .padding(.leading)
-                        ExpandableListItem(title: "Transit Phase") {
+                        ExpandableListItem(title: "Transit Phase Components") {
                             TransitPhaseView()
                         }
                     }
@@ -84,8 +96,10 @@ struct ExpandableListItem<Content: View>: View {
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 15)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+
 
             if isExpanded {
                 content()
@@ -102,4 +116,3 @@ struct ExpandableListItem<Content: View>: View {
 #Preview {
     ContentView()
 }
-

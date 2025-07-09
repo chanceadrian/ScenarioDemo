@@ -19,13 +19,13 @@ struct NextEffect: View {
     }
     
     private let entries: [Entry] = [
-        .init(initialTime: 52 * 60, message: "Power Bus 3 overload, followed by a loss of power supply to critical transit phase components."), // 52:00
+        .init(initialTime: 52 * 60, message: "Power Bus 3 overload, followed by a loss of power supply to  transit phase components and attitude control."), // 52:00
         .init(initialTime: 6 * 60 * 60, message: "Power Bus 2 circuit reset due to prolonged high usage."), // 6 hours
         .init(initialTime: 7 * 24 * 60 * 60, message: "Water supply low due to low output from water purifier.") // 7 days
     ]
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 8) {
             Text("Next Effects")
                 .font(.title2)
                 .fontWeight(.semibold)

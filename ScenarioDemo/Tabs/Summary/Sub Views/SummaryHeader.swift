@@ -15,7 +15,6 @@ struct SummaryHeaderView: View {
                 Text("Power System Critical Failure")
                     .font(.largeTitle)
                     .fontWeight(.semibold)
-                    .padding(.bottom,8)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Recover Power Bus 2")
                         .font(.title)

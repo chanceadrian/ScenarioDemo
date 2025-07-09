@@ -77,7 +77,7 @@ struct TransitPhaseView: View {
             }
             .listStyle(.insetGrouped)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .cornerRadius(10)
+            .cornerRadius(16)
         }
         .padding(.leading, 20)
         .padding(.trailing, 16)
@@ -87,7 +87,6 @@ struct TransitPhaseView: View {
             Color(colorScheme == .dark ? .systemGray6 : .systemBackground)
         )
         .frame(height: 640)
-        .cornerRadius(26)
         
     }
 }

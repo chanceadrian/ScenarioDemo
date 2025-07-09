@@ -25,7 +25,7 @@ struct Timeline: View {
     ]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             Text("Timeline")
                 .font(.title2)
                 .fontWeight(.semibold)
