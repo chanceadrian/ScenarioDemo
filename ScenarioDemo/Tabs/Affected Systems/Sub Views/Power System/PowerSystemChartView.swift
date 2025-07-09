@@ -173,6 +173,21 @@ struct PowerSystemChartView: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
+            HStack(spacing: 20) {
+                Button("Show Lollipop") {
+                    // Set to midpoint of chartDomain
+                    let midInterval = (chartDomain.lowerBound.timeIntervalSince1970 + chartDomain.upperBound.timeIntervalSince1970) / 2
+                    let midDate = Date(timeIntervalSince1970: midInterval)
+                    lollipopTime = midDate
+                }
+                .disabled(lollipopTime != nil)
+                Button("Hide Lollipop") {
+                    lollipopTime = nil
+                }
+                .disabled(lollipopTime == nil)
+            }
+            .font(.caption)
+            .padding(.bottom, 4)
             ZStack {
                 Chart {
                     ForEach([1, 2, 3], id: \.self) { busNumber in
@@ -232,7 +247,7 @@ struct PowerSystemChartView: View {
                 // Lollipop overlay
                 GeometryReader { geo in
                     ZStack {
-                        if let selectedTime = lollipopTime ?? (allTimes.count > 0 ? allTimes.first : nil) {
+                        if let selectedTime = lollipopTime {
                             let x = xPosition(for: selectedTime, in: geo.size, domain: chartDomain)
                             // Vertical lollipop line
                             Path { path in
