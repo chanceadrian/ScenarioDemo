@@ -31,7 +31,7 @@ struct WaterPurifierView: View {
             )
             VStack(spacing: 0) {
                 if schematicSelection == 0 {
-                    Image(colorScheme == .dark ? "verticalDark" : "verticalLight")
+                    Image(colorScheme == .dark ? "waterDark" : "waterLight")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
