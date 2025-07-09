@@ -293,15 +293,13 @@ struct PowerSystemChartView: View {
                                     RoundedRectangle(cornerRadius: 12).stroke(Color.gray, lineWidth: 1)
                                 )
                                 .frame(maxWidth: 140)
-                                .position(x: min(max(x + 70, 70), geo.size.width - 70), y: 40)
+                                .position(x: min(max(x + 80, 80), geo.size.width - 60), y: 40)
                                 .onTapGesture {
                                     lollipopTime = nil
                                 }
-                                .transition(.opacity)
                             }
                         }
                     }
-                    .animation(.easeInOut(duration: 0.2), value: lollipopTime)
                 }
             }
         }
@@ -356,3 +354,4 @@ struct PowerSystemChartView: View {
             .padding()
     }
 }
+
