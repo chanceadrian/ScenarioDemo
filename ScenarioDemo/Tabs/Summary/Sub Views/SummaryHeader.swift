@@ -10,42 +10,43 @@ import SwiftUI
 struct SummaryHeaderView: View {
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text("Power System Anomaly")
+        VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Power System Critical Failure")
                     .font(.largeTitle)
-                    .fontWeight(.bold)
-                Spacer()
-                HStack {
-                    VStack(alignment: .trailing) {
-                       Text("Mission Phase")
-                            .fontWeight(.medium)
-                       Text("Late Stage Transit")
-                    }
-                    .font(.footnote)
-                    Image(systemName: "location.north.line.fill")
-                        .font(.title)
-                }
-            }
-            HStack {
-                VStack(alignment: .leading, spacing: 8) {
+                    .fontWeight(.semibold)
+                    .padding(.bottom,8)
+                VStack(alignment: .leading, spacing: 4) {
                     Text("Recover Power Bus 2")
-                        .font(.title2)
+                        .font(.title)
                         .fontWeight(.semibold)
                     Text("• 52 minutes until Bus-3 overload.\n• Bus-2 voltage critically low (95 V);\n• Essential systems rerouted to Bus-3 to maintain transit-phase operations.")
                         .font(.body)
                 }
-                .frame(maxWidth: 680, alignment: .leading)
-                Spacer()
+            }
+            .frame(maxWidth: 680, alignment: .leading)
+            
+            HStack(spacing: 40) {
                 HStack {
-                    VStack(alignment: .trailing) {
+                    Image(systemName: "person.slash.fill")
+                        .font(.title)
+                    VStack(alignment: .leading) {
                        Text("Ground Assistance")
                             .fontWeight(.medium)
                        Text("None by Next Affect")
                     }
                     .font(.footnote)
-                    Image(systemName: "person.slash.fill")
+                }
+                
+                HStack {
+                    Image(systemName: "location.north.line.fill")
                         .font(.title)
+                    VStack(alignment: .leading) {
+                       Text("Mission Phase")
+                            .fontWeight(.medium)
+                       Text("Late Stage Transit")
+                    }
+                    .font(.footnote)
                 }
             }
         }

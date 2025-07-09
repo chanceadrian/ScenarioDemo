@@ -234,7 +234,7 @@ struct PowerSystemChartView: View {
                 GeometryReader { geo in
                     ZStack {
                         Rectangle()
-                            .opacity(0.01)
+                            .opacity(0)
                             .contentShape(Rectangle())
                             .gesture(
                                 DragGesture(minimumDistance: 0)
@@ -269,7 +269,7 @@ struct PowerSystemChartView: View {
                                         VStack(alignment: .leading, spacing: 2) {
                                             Text(selectedTime, style: .time)
                                                 .font(.caption)
-                                                .bold()
+                                                .foregroundStyle(.secondary)
                                             ForEach([1, 2, 3], id: \.self) { bus in
                                                 if selectedIndices.contains(bus - 1), let pt = valuePoint(for: bus, at: selectedTime) {
                                                     HStack(spacing: 6) {
@@ -277,7 +277,7 @@ struct PowerSystemChartView: View {
                                                             .font(.caption2)
                                                             .foregroundColor(busColor(bus))
                                                         Text("Bus \(bus): \(String(format: "%.1f", pt.voltage)) V")
-                                                            .font(.caption2)
+                                                            .font(.caption)
                                                     }
                                                 }
                                             }
@@ -286,13 +286,12 @@ struct PowerSystemChartView: View {
                                     }
                                 }
                                 .padding(8)
-                                .background(Color(.systemBackground).opacity(0.96))
+                                .background(Color(.systemBackground))
                                 .cornerRadius(12)
-                                .shadow(radius: 3)
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 12).stroke(Color.gray, lineWidth: 1)
                                 )
-                                .frame(maxWidth: 140)
+                                .frame(maxWidth: 128)
                                 .position(x: min(max(x + 80, 80), geo.size.width - 60), y: 40)
                                 .onTapGesture {
                                     lollipopTime = nil

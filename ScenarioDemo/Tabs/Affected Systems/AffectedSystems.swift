@@ -89,7 +89,7 @@ struct ExpandableListItem<Content: View>: View {
 
             if isExpanded {
                 content()
-                    .transition(.opacity.combined(with: .scale(scale: 1, anchor: .top)))
+                    .transition(.scale(scale: 1, anchor: .top))
                     .animation(.interpolatingSpring(stiffness: 35, damping: 20), value: isExpanded)
             }
         }
