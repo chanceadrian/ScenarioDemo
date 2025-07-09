@@ -18,20 +18,20 @@ struct WaterPurifierView: View {
             PanelView(
                 panelTitle: "Water Purifier",
                 panelSubtitle: "Starting at 4:55, Water Purifier Impeller Speed breached low threshold. Output now 0L/hour.",
-                pickerEntries: [
+                pickerEntries: schematicSelection == 1 ? [
                     PickerEntry(color: .mint, name: "Speed", unit: "RPM"),
                     PickerEntry(color: .cyan, name: "Power Draw", unit: "Voltage"),
                     PickerEntry(color: .indigo, name: "Output", unit: "Liters")
-                ],
+                ] : [],
                 hintMessage: "If not resolved, clean water supply will run low in ",
                 hintHighlight: "6 days.",
                 segmentedControl: AnyView(DataLogSwitcher(selection: $schematicSelection)),
-                isDataSelected: { schematicSelection == 0 },
+                isDataSelected: { schematicSelection == 1 },
                 selectedIndices: $selectedIndices
             )
             VStack(spacing: 0) {
                 if schematicSelection == 0 {
-                    Image(colorScheme == .dark ? "verticalDark" : "verticalLight")
+                    Image(colorScheme == .dark ? "waterDark" : "waterLight")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
