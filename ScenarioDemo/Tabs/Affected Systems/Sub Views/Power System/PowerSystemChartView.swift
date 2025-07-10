@@ -19,6 +19,10 @@ struct PowerSystemChartView: View {
     @Binding var selectedIndices: Set<Int>
     
     @State private var lollipopTime: Date? = nil
+    @State private var selectedTimeRange: WaterChartTimeRange = .thirtyMin
+    @State private var chartVisible: Bool = false
+    @State private var now = Date()
+    @State private var timer: Timer? = nil
     
     private var allData: [VoltageDataPoint] {
         PowerSystemChartView.generateBusData().sorted { $0.time < $1.time }
@@ -28,277 +32,245 @@ struct PowerSystemChartView: View {
         Array(Set(allData.map { $0.time })).sorted()
     }
     
-    // Compute shared time domain like water purifier
-    private var timeDomain: ClosedRange<Date> {
-        let realTimes = PowerSystemChartView.generateBusData().map { $0.time }
-        return computePaddedTimeDomain([realTimes])
-    }
-    
-    static var cachedBus2Voltages: [Double]? = nil
-    
+    // Generate data exactly like water purifier - relative to current time
     static func generateBusData() -> [VoltageDataPoint] {
         let calendar = Calendar.current
-        let today = Date()
-        let startComponents = calendar.dateComponents([.year, .month, .day], from: today)
-        let startTime = calendar.date(bySettingHour: 16, minute: 41, second: 0, of: calendar.date(from: startComponents)!)!
-        
-        // Cache deterministic random voltages for Bus 2 after i == 10 (indices 11-19)
-        if cachedBus2Voltages == nil {
-            var cachedVals = [Double]()
-            for _ in 11..<20 {
-                cachedVals.append(6 + Double.random(in: 0...4))
-            }
-            cachedBus2Voltages = cachedVals
-        }
+        let now = Date()
+        let startTime = calendar.date(byAdding: .minute, value: -179, to: now)!
+        let rerouteTime = calendar.date(byAdding: .minute, value: -15, to: now)! // Bus 2 changes here
+        let bus3RiseTime = calendar.date(byAdding: .minute, value: -14, to: now)! // Bus 3 changes here, 1 minute after bus 2
         
         var allPoints = [VoltageDataPoint]()
+        var currentTime = startTime
+        var minuteIndex = 0
         
-        // Bus 1 - Straight line at ~200V (indigo)
-        for i in 0..<20 { // Extended to go to 5:02 PM (18 minutes from 4:44 PM)
-            let time = calendar.date(byAdding: .minute, value: i, to: startTime)!
-            let voltage = 180.0 + sin(Double(i) * 0.3) * 6.5
-            allPoints.append(VoltageDataPoint(time: time, voltage: voltage, isPredicted: false, busNumber: 1))
-        }
-        
-        // Bus 2 - Intermittently falling for first 10 points (no deeper than 120), sharp decline at 11th, hover just above 0
-        for i in 0..<20 {
-            let time = calendar.date(byAdding: .minute, value: i, to: startTime)!
-            var voltage: Double
-            if i < 10 {
-                // Intermittent fall: alternate between dropping and holding
-                if i % 2 == 0 {
-                    voltage = 180 - Double(i) * 6.0 // drops in steps
-                } else {
-                    voltage = 180 - Double(i - 1) * 6.0 // hold previous
-                }
-                if voltage < 120 { voltage = 120 }
-            } else if i == 10 {
-                voltage = 8 // sharp drop
+        while currentTime <= now {
+            // PB2 (mint): Flat, then spike at reroute, then settle (top line)
+            if currentTime < rerouteTime {
+                let voltage = 200.0 + sin(Double(minuteIndex) * 0.15) * 2.5
+                allPoints.append(VoltageDataPoint(time: currentTime, voltage: voltage, isPredicted: false, busNumber: 2))
+            } else if currentTime == rerouteTime {
+                let voltage = 260.0 // spike at reroute
+                allPoints.append(VoltageDataPoint(time: currentTime, voltage: voltage, isPredicted: false, busNumber: 2))
             } else {
-                voltage = PowerSystemChartView.cachedBus2Voltages![i - 11]
+                let voltage = 220.0 + sin(Double(minuteIndex) * 0.1)
+                allPoints.append(VoltageDataPoint(time: currentTime, voltage: voltage, isPredicted: false, busNumber: 2))
             }
-            allPoints.append(VoltageDataPoint(time: time, voltage: voltage, isPredicted: false, busNumber: 2))
-        }
-        
-        // Bus 3 - Going above Bus 1 after rerouting (cyan)
-        for i in 0..<20 { // Extended to go to 5:02 PM
-            let time = calendar.date(byAdding: .minute, value: i, to: startTime)!
-            let voltage: Double
-            if i < 10 {
-                voltage = 190 + Double(i) * (10.0 / 10.0)
+            
+            // PB3 (cyan):
+            if currentTime < bus3RiseTime {
+                let voltage = 90.0 + sin(Double(minuteIndex) * 0.1) * 2.0
+                allPoints.append(VoltageDataPoint(time: currentTime, voltage: voltage, isPredicted: false, busNumber: 3))
             } else {
-                // Continue increasing toward overload levels
-                voltage = 220 + Double(i - 10) * (60.0 / 9.0)
+                let voltage = 190.0 + sin(Double(minuteIndex) * 0.05) // Adjusted to stay further below 210V threshold
+                allPoints.append(VoltageDataPoint(time: currentTime, voltage: voltage, isPredicted: false, busNumber: 3))
             }
-            allPoints.append(VoltageDataPoint(time: time, voltage: voltage, isPredicted: false, busNumber: 3))
+            
+            // PB1 (indigo): Adjusted to remain below 210V
+            let voltage = 170.0 + sin(Double(minuteIndex) * 0.1) * 2.0
+            allPoints.append(VoltageDataPoint(time: currentTime, voltage: voltage, isPredicted: false, busNumber: 1))
+            
+            currentTime = calendar.date(byAdding: .minute, value: 1, to: currentTime)!
+            minuteIndex += 1
         }
         
         return allPoints
     }
     
-    static func generatePredictedData(realPoints: [VoltageDataPoint]) -> [VoltageDataPoint] {
-        let calendar = Calendar.current
-        var predictedPoints = [VoltageDataPoint]()
-        
-        let lastBus1 = realPoints.filter { $0.busNumber == 1 }.last
-        let lastBus2 = realPoints.filter { $0.busNumber == 2 }.last
-        let lastBus3 = realPoints.filter { $0.busNumber == 3 }.last
-        
-        // End time for data should be 5:02 PM (not domain end)
-        let today = Date()
-        let startComponents = calendar.dateComponents([.year, .month, .day], from: today)
-        let dataEndTime = calendar.date(bySettingHour: 17, minute: 2, second: 0, of: calendar.date(from: startComponents)!)!
-        
-        for busNum in 1...3 {
-            guard let lastPoint = (busNum == 1 ? lastBus1 : busNum == 2 ? lastBus2 : lastBus3) else { continue }
-            
-            // Don't add the connecting point - let predictions continue naturally from last real point
-            
-            // Only generate predictions until 5:02 PM
-            var i = 1 // Start from 1 minute after last real point
-            while i <= 4 { // Only 3-4 prediction points to avoid long horizontal lines
-                guard let time = calendar.date(byAdding: .minute, value: i, to: lastPoint.time),
-                      time <= dataEndTime else { break }
-                
-                let voltage: Double
-                switch busNum {
-                case 1:
-                    // Bus 1 continues hovering around 200V with slight variation
-                    voltage = lastPoint.voltage + sin(Double(i) * 0.5) * 0.8
-                case 2:
-                    // Bus 2 continues declining toward 0V more aggressively
-                    voltage = max(0, lastPoint.voltage - Double(i) * 3.0)
-                case 3:
-                    // Bus 3 continues increasing (overload trend)
-                    voltage = lastPoint.voltage + Double(i) * 8.0
-                default:
-                    voltage = lastPoint.voltage
-                }
-                
-                predictedPoints.append(VoltageDataPoint(time: time, voltage: voltage, isPredicted: true, busNumber: busNum))
-                i += 1
-            }
-        }
-        
-        return predictedPoints
-    }
-    
-    static func getTimeDomain() -> ClosedRange<Date> {
-        let calendar = Calendar.current
-        let today = Date()
-        let startComponents = calendar.dateComponents([.year, .month, .day], from: today)
-        let startTime = calendar.date(bySettingHour: 16, minute: 44, second: 0, of: calendar.date(from: startComponents)!)!
-        let endTime = calendar.date(bySettingHour: 17, minute: 5, second: 0, of: calendar.date(from: startComponents)!)! // Extended to 5:05 PM to show 5:02 PM label
-        return startTime...endTime
-    }
-    
-    static func getPredictionStartTime() -> Date {
-        let calendar = Calendar.current
-        let today = Date()
-        let startComponents = calendar.dateComponents([.year, .month, .day], from: today)
-        let startTime = calendar.date(bySettingHour: 16, minute: 44, second: 0, of: calendar.date(from: startComponents)!)!
-        return calendar.date(byAdding: .minute, value: 15, to: startTime)! // Start predictions at 4:59 PM
-    }
-    
     var body: some View {
-        let realData = PowerSystemChartView.generateBusData()
-        let chartDomain = timeDomain
+        // Use the same time filtering logic as water purifier
+        let rerouteTime = Calendar.current.date(byAdding: .minute, value: -15, to: now)!
+        let minTime = Calendar.current.date(byAdding: .minute, value: -selectedTimeRange.minutes + 1, to: now)!
+        let visibleData = allData.filter { $0.time >= minTime && $0.time <= now }
+        let visibleDomain = minTime...now
+        
+        // Use the same stride logic as water purifier
+        let stride: Int = {
+            switch selectedTimeRange {
+            case .thirtyMin: return 1
+            case .oneHour: return 2
+            case .twoHour: return 4
+            case .threeHour: return 6
+            }
+        }()
+        let sampledData = visibleData.enumerated().compactMap { idx, dp in idx % stride == 0 ? dp : nil }
+        
+        // Use the same x-axis stride as water purifier
+        let xAxisStride: Int = {
+            switch selectedTimeRange {
+            case .thirtyMin: return 3
+            case .oneHour: return 6
+            case .twoHour: return 12
+            case .threeHour: return 18
+            }
+        }()
         
         VStack(alignment: .leading) {
+            Picker("Time Range", selection: Binding(
+                get: { selectedTimeRange },
+                set: { newValue in
+                    withAnimation(.easeInOut(duration: 0.45)) {
+                        selectedTimeRange = newValue
+                    }
+                })) {
+                    ForEach(WaterChartTimeRange.allCases) { range in
+                        Text(range.rawValue).tag(range)
+                    }
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal)
+            
             HStack {
                 Spacer()
-                Text("V")
+                Text("W")
                     .font(.subheadline)
+                    .foregroundColor(.secondary)
             }
             
-            ZStack {
-                Chart {
-                    ForEach([1, 2, 3], id: \.self) { busNumber in
-                        if selectedIndices.contains(busNumber - 1) {
-                            ForEach(realData.filter { $0.busNumber == busNumber }) { point in
-                                LineMark(
-                                    x: .value("Time", point.time),
-                                    y: .value("Voltage", point.voltage),
-                                    series: .value("Series", "Bus\(busNumber)Real")
-                                )
-                                .foregroundStyle(busColor(busNumber))
-                                .lineStyle(StrokeStyle(lineWidth: 2))
-                            }
-                            ForEach(realData.filter { $0.busNumber == busNumber }) { point in
-                                PointMark(
-                                    x: .value("Time", point.time),
-                                    y: .value("Voltage", point.voltage)
-                                )
-                                .symbol(busNumber == 1 ? .circle : busNumber == 2 ? .square : .triangle)
-                                .foregroundStyle(busColor(busNumber))
-                            }
-                        }
-                    }
-                    let highThreshold = 310.0
-                    let lowThreshold = 80.0
-                    RuleMark(y: .value("highThreshold", highThreshold))
-                        .foregroundStyle(.orange)
-                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [6, 4]))
-                        .annotation(position: .top, alignment: .leading) {
-                            Text("Overload").foregroundColor(.orange).font(.footnote)
-                        }
-                    RuleMark(y: .value("lowThreshold", lowThreshold))
-                        .foregroundStyle(.gray)
-                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [6, 4]))
-                        .annotation(position: .top, alignment: .leading) {
-                            Text("Low").foregroundColor(.gray).font(.footnote)
-                        }
-                }
-                .chartXScale(domain: chartDomain)
-                .chartYScale(domain: 0...350)
-                .chartYAxis {
-                    AxisMarks(preset: .inset) { value in
-                        AxisGridLine()
-                        AxisValueLabel()
-                    }
-                }
-                .chartXAxis {
-                    AxisMarks(values: .stride(by: .minute, count: 3)) { value in
-                        AxisGridLine()
-                        AxisValueLabel() {
-                            if let date = value.as(Date.self) {
-                                Text(date, format: .dateTime.hour(.defaultDigits(amPM: .abbreviated)).minute())
-                            }
-                        }
-                    }
-                }
-                // Lollipop overlay
-                GeometryReader { geo in
-                    ZStack {
-                        Rectangle()
-                            .opacity(0)
-                            .contentShape(Rectangle())
-                            .gesture(
-                                DragGesture(minimumDistance: 0)
-                                    .onChanged { value in
-                                        let relative = min(max(value.location.x / geo.size.width, 0), 1)
-                                        let snappedTime = snapTime(relative: relative, domain: chartDomain)
-                                        lollipopTime = snappedTime
-                                    }
-                                    .onEnded { value in
-                                        let relative = min(max(value.location.x / geo.size.width, 0), 1)
-                                        let snappedTime = snapTime(relative: relative, domain: chartDomain)
-                                        lollipopTime = snappedTime
-                                    }
+            Chart {
+                // Order lines: Bus 2 (top), Bus 3 (middle), Bus 1 (bottom)
+                ForEach([2, 3, 1], id: \.self) { busNumber in
+                    if selectedIndices.contains(busNumber - 1) {
+                        ForEach(sampledData.filter { $0.busNumber == busNumber }) { point in
+                            LineMark(
+                                x: .value("Time", point.time),
+                                y: .value("Voltage", point.voltage),
+                                series: .value("Series", "Bus\(busNumber)Real")
                             )
-                        if let selectedTime = lollipopTime {
-                            let x = xPosition(for: selectedTime, in: geo.size, domain: chartDomain)
-                            // Vertical lollipop line
-                            Path { path in
-                                path.move(to: CGPoint(x: x, y: 0))
-                                path.addLine(to: CGPoint(x: x, y: geo.size.height))
-                            }
-                            .stroke(Color.primary, style: StrokeStyle(lineWidth: 2, dash: [2,2]))
-                            // Single combined bubble above line
-                            let valueTexts = [1, 2, 3].compactMap { bus -> String? in
-                                guard selectedIndices.contains(bus - 1),
-                                      let pt = valuePoint(for: bus, at: selectedTime) else { return nil }
-                                return "Bus\(bus): \(String(format: "%.1f", pt.voltage)) V"
-                            }
-                            if !valueTexts.isEmpty {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    HStack(alignment: .top) {
-                                        VStack(alignment: .leading, spacing: 2) {
-                                            Text(selectedTime, style: .time)
-                                                .font(.caption)
-                                                .foregroundStyle(.secondary)
-                                            ForEach([1, 2, 3], id: \.self) { bus in
-                                                if selectedIndices.contains(bus - 1), let pt = valuePoint(for: bus, at: selectedTime) {
-                                                    HStack(spacing: 6) {
-                                                        Image(systemName: sfSymbolName(for: bus))
-                                                            .font(.caption2)
-                                                            .foregroundColor(busColor(bus))
-                                                        Text("Bus \(bus): \(String(format: "%.1f", pt.voltage)) V")
-                                                            .font(.caption)
-                                                    }
-                                                }
-                                            }
-                                        }
-                                        Spacer()
+                            .foregroundStyle(busColor(busNumber))
+                            .lineStyle(StrokeStyle(lineWidth: 2))
+                            .opacity(chartVisible ? 1 : 0)
+                        }
+                        ForEach(sampledData.filter { $0.busNumber == busNumber }) { point in
+                            PointMark(
+                                x: .value("Time", point.time),
+                                y: .value("Voltage", point.voltage)
+                            )
+                            .symbol(busNumber == 1 ? .circle : busNumber == 2 ? .square : .triangle)
+                            .foregroundStyle(busColor(busNumber))
+                            .opacity(chartVisible ? 1 : 0)
+                        }
+                    }
+                }
+
+                // Threshold horizontal red RuleMark labeled "Threshold"
+                RuleMark(y: .value("Threshold", 210.0))
+                    .foregroundStyle(.orange)
+                    .lineStyle(StrokeStyle(lineWidth: 1, dash: [6, 4]))
+                    .annotation(position: .top, alignment: .leading) {
+                        Text("Bus Capacity").foregroundColor(.orange).font(.footnote)
+                    }
+                    .opacity(chartVisible ? 1 : 0)
+            }
+            .chartXScale(domain: visibleDomain)
+            .chartYScale(domain: 50...300)
+            .chartYAxis { AxisMarks(preset: .inset) }
+            .chartXAxis {
+                AxisMarks(values: .stride(by: .minute, count: xAxisStride)) { value in
+                    AxisGridLine()
+                    AxisValueLabel() {
+                        if let date = value.as(Date.self) {
+                            Text(date, format: .dateTime.hour(.defaultDigits(amPM: .abbreviated)).minute())
+                        }
+                    }
+                }
+            }
+            .animation(.easeInOut(duration: 0.45), value: chartVisible)
+            .onChange(of: selectedTimeRange) { _, _ in
+                chartVisible = false
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    withAnimation(.easeInOut(duration: 0.45)) {
+                        chartVisible = true
+                    }
+                }
+            }
+            .onAppear {
+                chartVisible = false
+                timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+                    now = Date()
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
+                    withAnimation(.easeInOut(duration: 0.45)) {
+                        chartVisible = true
+                    }
+                }
+            }
+            .onDisappear {
+                chartVisible = false
+                timer?.invalidate()
+                timer = nil
+            }
+            .chartOverlay { proxy in
+                GeometryReader { geo in
+                    Rectangle()
+                        .fill(Color.clear)
+                        .contentShape(Rectangle())
+                        .gesture(
+                            DragGesture(minimumDistance: 0)
+                                .onChanged { value in
+                                    if let date: Date = proxy.value(atX: value.location.x) {
+                                        let snappedTime = snapTime(date: date)
+                                        lollipopTime = snappedTime
                                     }
                                 }
-                                .padding(8)
-                                .background(Color(.systemBackground))
-                                .cornerRadius(12)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12).stroke(Color.gray, lineWidth: 1)
-                                )
-                                .frame(maxWidth: 128)
-                                .position(x: min(max(x + 80, 80), geo.size.width - 60), y: 40)
-                                .onTapGesture {
-                                    lollipopTime = nil
+                                .onEnded { value in
+                                    if let date: Date = proxy.value(atX: value.location.x) {
+                                        let snappedTime = snapTime(date: date)
+                                        lollipopTime = snappedTime
+                                    }
                                 }
+                        )
+                    
+                    if let selectedTime = lollipopTime,
+                       let xPos = proxy.position(forX: selectedTime),
+                       let plotFrameAnchor = proxy.plotFrame {
+                        let plotRect = geo[plotFrameAnchor]
+                        
+                        // Vertical lollipop line
+                        Path { path in
+                            path.move(to: CGPoint(x: xPos, y: plotRect.minY))
+                            path.addLine(to: CGPoint(x: xPos, y: plotRect.maxY))
+                        }
+                        .stroke(Color.primary.opacity(0.7), style: StrokeStyle(lineWidth: 2, dash: [4,2]))
+                        
+                        // Combined bubble above line
+                        let valueTexts = [1, 2, 3].compactMap { bus -> (Int, VoltageDataPoint)? in
+                            guard selectedIndices.contains(bus - 1),
+                                  let pt = valuePoint(for: bus, at: selectedTime) else { return nil }
+                            return (bus, pt)
+                        }
+                        
+                        if !valueTexts.isEmpty {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(selectedTime.formatted(date: .omitted, time: .shortened))
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                ForEach(valueTexts, id: \.0) { bus, pt in
+                                    HStack(spacing: 6) {
+                                        Image(systemName: sfSymbolName(for: bus))
+                                            .font(.caption2)
+                                            .foregroundColor(busColor(bus))
+                                        Text("Bus \(bus): \(String(format: "%.1f", pt.voltage)) W")
+                                            .font(.caption)
+                                    }
+                                }
+                            }
+                            .padding(8)
+                            .background(RoundedRectangle(cornerRadius: 8).fill(Color(.systemBackground).opacity(0.95)))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.primary, lineWidth: 1)
+                            )
+                            .position(x: xPos, y: plotRect.minY - 40)
+                            .onTapGesture {
+                                lollipopTime = nil
                             }
                         }
                     }
                 }
             }
         }
+        .frame(maxWidth: .infinity)
     }
     
     private func busColor(_ busNumber: Int) -> Color {
@@ -315,21 +287,8 @@ struct PowerSystemChartView: View {
             .min(by: { abs($0.time.timeIntervalSince(time)) < abs($1.time.timeIntervalSince(time)) })
     }
     
-    private func xPosition(for time: Date, in size: CGSize, domain: ClosedRange<Date>) -> CGFloat {
-        let t = (time.timeIntervalSince1970 - domain.lowerBound.timeIntervalSince1970) /
-                (domain.upperBound.timeIntervalSince1970 - domain.lowerBound.timeIntervalSince1970)
-        return CGFloat(t) * size.width
-    }
-    
-    private func yPosition(for voltage: Double, chartHeight: CGFloat) -> CGFloat {
-        // y = 0 is top, voltage 0 at bottom, 350 at top
-        return chartHeight * CGFloat(1.0 - (voltage / 350.0))
-    }
-    
-    private func snapTime(relative: CGFloat, domain: ClosedRange<Date>) -> Date {
-        let target = domain.lowerBound.timeIntervalSince1970 + Double(relative) * (domain.upperBound.timeIntervalSince1970 - domain.lowerBound.timeIntervalSince1970)
-        let closest = allTimes.min(by: { abs($0.timeIntervalSince1970 - target) < abs($1.timeIntervalSince1970 - target) })
-        return closest ?? domain.lowerBound
+    private func snapTime(date: Date) -> Date {
+        allTimes.min(by: { abs($0.timeIntervalSince(date)) < abs($1.timeIntervalSince(date)) }) ?? date
     }
     
     private func sfSymbolName(for bus: Int) -> String {
@@ -346,8 +305,7 @@ struct PowerSystemChartView: View {
     ZStack {
         Color(.systemGroupedBackground)
             .ignoresSafeArea()
-        PowerSystemView()
+        AffectedSystemsView()
             .padding()
     }
 }
-
