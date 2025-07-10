@@ -36,9 +36,6 @@ enum WaterChartTimeRange: String, CaseIterable, Identifiable {
 
 struct WaterChartView: View {
     
-    @State private var syncedSelection: Date? = nil
-    @State private var selectedTimeRange: WaterChartTimeRange = .thirtyMin
-    
     let selectedIndices: Set<Int>
     
     // Compute shared time domain for stacking alignment
@@ -48,6 +45,10 @@ struct WaterChartView: View {
         let outputTimes = WaterChartOutputView.generateData().map { $0.time }
         return computePaddedTimeDomain([speedTimes, powerTimes, outputTimes])
     }
+    
+    @State private var selectedTimeRange: WaterChartTimeRange = .thirtyMin
+    
+    @State private var syncedSelection: Date? = nil
     
     var body: some View {
         VStack(spacing: 12) {
@@ -67,13 +68,13 @@ struct WaterChartView: View {
             
             VStack(spacing: 20) {
                 if selectedIndices.contains(0) {
-                    WaterChartSpeedView(domain: timeDomain, syncedSelection: $syncedSelection, timeRange: selectedTimeRange)
+                    WaterChartSpeedView(domain: timeDomain, timeRange: selectedTimeRange, syncedSelection: $syncedSelection)
                 }
                 if selectedIndices.contains(1) {
-                    WaterChartPowerView(domain: timeDomain, syncedSelection: $syncedSelection, timeRange: selectedTimeRange)
+                    WaterChartPowerView(domain: timeDomain, timeRange: selectedTimeRange, syncedSelection: $syncedSelection)
                 }
                 if selectedIndices.contains(2) {
-                    WaterChartOutputView(domain: timeDomain, syncedSelection: $syncedSelection, timeRange: selectedTimeRange)
+                    WaterChartOutputView(domain: timeDomain, timeRange: selectedTimeRange, syncedSelection: $syncedSelection)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -93,16 +94,18 @@ struct WaterChartSpeedView: View {
     @State private var data: [DataPoint]
     @State private var chartVisible: Bool = false
     @State private var selectedDataPoint: DataPoint? = nil
+    @State private var lollipopVisible: Bool = true
+    
+    @Binding var syncedSelection: Date?
     
     let domain: ClosedRange<Date>?
-    @Binding var syncedSelection: Date?
     let timeRange: WaterChartTimeRange
     
-    init(domain: ClosedRange<Date>? = nil, syncedSelection: Binding<Date?>, timeRange: WaterChartTimeRange) {
+    init(domain: ClosedRange<Date>? = nil, timeRange: WaterChartTimeRange, syncedSelection: Binding<Date?>) {
         self._data = State(initialValue: Self.generateData())
         self.domain = domain
-        self._syncedSelection = syncedSelection
         self.timeRange = timeRange
+        self._syncedSelection = syncedSelection
     }
     
     static func generateData() -> [DataPoint] {
@@ -164,13 +167,12 @@ struct WaterChartSpeedView: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
-            let showingSync = syncedSelection != nil
             Chart(sampledData) { point in
                 LineMark(
                     x: .value("Time", point.time),
                     y: .value("RPM", point.rpm)
                 )
-                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.mint)
+                .foregroundStyle(Color.mint)
                 .lineStyle(StrokeStyle(lineWidth: 2))
                 .opacity(chartVisible ? 1 : 0)
                 PointMark(
@@ -178,7 +180,7 @@ struct WaterChartSpeedView: View {
                     y: .value("RPM", point.rpm)
                 )
                 .symbol(Circle())
-                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.mint)
+                .foregroundStyle(Color.mint)
                 .opacity(chartVisible ? 1 : 0)
                 
                 // Thresholds
@@ -207,99 +209,92 @@ struct WaterChartSpeedView: View {
             }
             .chartOverlay { proxy in
                 GeometryReader { geo in
+                    let dragGesture = DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            if let date: Date = proxy.value(atX: value.location.x) {
+                                if let closest = sampledData.min(by: {
+                                    abs($0.time.timeIntervalSince(date)) < abs($1.time.timeIntervalSince(date))
+                                }) {
+                                    selectedDataPoint = closest
+                                    lollipopVisible = true
+                                }
+                            }
+                        }
+                    let longPressDrag = LongPressGesture(minimumDuration: 0.15)
+                        .sequenced(before: DragGesture(minimumDistance: 0))
+                        .onChanged { value in
+                            switch value {
+                            case .first(true):
+                                // long press began, no drag yet
+                                break
+                            case .second(true, let drag?):
+                                if let date: Date = proxy.value(atX: drag.location.x) {
+                                    syncedSelection = date
+                                    lollipopVisible = true
+                                }
+                            default:
+                                break
+                            }
+                        }
+                        .onEnded { _ in
+                            syncedSelection = nil
+                        }
+                    
                     Rectangle()
                         .fill(Color.clear)
                         .contentShape(Rectangle())
-                        .gesture(
-                            DragGesture(minimumDistance: 0)
-                                .onChanged { value in
-                                    if let date: Date = proxy.value(atX: value.location.x) {
-                                        if let closest = sampledData.min(by: {
-                                            abs($0.time.timeIntervalSince(date)) < abs($1.time.timeIntervalSince(date))
-                                        }) {
-                                            selectedDataPoint = closest
-                                            // If we're in sync mode, update the shared selection
-                                            if syncedSelection != nil {
-                                                syncedSelection = closest.time
-                                            }
-                                        }
-                                    }
-                                }
-                        )
+                        .gesture(longPressDrag.simultaneously(with: dragGesture))
                     
-                    // Show lollipop - use synced selection if available, otherwise local selection
-                    let displayPoint: DataPoint? = {
-                        if let syncTime = syncedSelection {
-                            return sampledData.min(by: {
-                                abs($0.time.timeIntervalSince(syncTime)) < abs($1.time.timeIntervalSince(syncTime))
-                            })
+                    let selectedTime: Date? = {
+                        if let synced = syncedSelection {
+                            return synced
+                        } else if let selected = selectedDataPoint?.time {
+                            return selected
                         } else {
-                            return selectedDataPoint
+                            return nil
                         }
                     }()
                     
-                    if let selected = displayPoint,
-                       let xPos = proxy.position(forX: selected.time),
-                       let yPos = proxy.position(forY: selected.rpm),
+                    if let selectedTime = selectedTime,
+                       let closest = sampledData.min(by: { abs($0.time.timeIntervalSince(selectedTime)) < abs($1.time.timeIntervalSince(selectedTime)) }),
+                       let xPos = proxy.position(forX: closest.time),
+                       let yPos = proxy.position(forY: closest.rpm),
                        let plotFrameAnchor = proxy.plotFrame {
                         let plotRect = geo[plotFrameAnchor]
-                        let isInSyncMode = syncedSelection != nil
                         
-                        Path { path in
-                            path.move(to: CGPoint(x: xPos, y: plotRect.minY))
-                            path.addLine(to: CGPoint(x: xPos, y: plotRect.maxY))
+                        if lollipopVisible {
+                            Path { path in
+                                path.move(to: CGPoint(x: xPos, y: plotRect.minY))
+                                path.addLine(to: CGPoint(x: xPos, y: plotRect.maxY))
+                            }
+                            .stroke(Color.mint.opacity(0.7), style: StrokeStyle(lineWidth: 2, dash: [4,2]))
                         }
-                        .stroke((isInSyncMode ? Color.gray : Color.mint).opacity(0.7), style: StrokeStyle(lineWidth: 2, dash: [4,2]))
                         
                         Circle()
-                            .fill(Color.mint) // Keep original color even in sync mode
+                            .fill(Color.mint)
                             .frame(width: 14, height: 14)
                             .position(x: xPos, y: yPos)
+                            .opacity(lollipopVisible ? 1 : 0)
                         
                         VStack(spacing: 2) {
-                            Text(selected.time.formatted(date: .omitted, time: .shortened))
+                            Text(closest.time.formatted(date: .omitted, time: .shortened))
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
-                            Text("\(Int(selected.rpm)) RPM")
+                            Text("\(Int(closest.rpm)) RPM")
                                 .font(.caption.bold())
                         }
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .background(RoundedRectangle(cornerRadius: 8).fill(Color(.systemBackground).opacity(0.95)))
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.mint, lineWidth: 1)) // Keep original color border
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.mint, lineWidth: 1))
                         .position(x: xPos, y: yPos - 30)
+                        .opacity(lollipopVisible ? 1 : 0)
                         .onTapGesture {
-                            // Always clear just this chart's selection
                             selectedDataPoint = nil
+                            withAnimation(.easeInOut(duration: 0.42)) {
+                                lollipopVisible = false
+                            }
                         }
-                        .gesture(
-                            LongPressGesture(minimumDuration: 0.15)
-                                .sequenced(before: DragGesture())
-                                .onChanged { value in
-                                    switch value {
-                                    case .first(true):
-                                        // Long press started - enter sync mode
-                                        syncedSelection = selected.time
-                                    case .second(true, let drag?):
-                                        // Dragging while in sync mode
-                                        if let date: Date = proxy.value(atX: drag.location.x) {
-                                            if let closest = sampledData.min(by: {
-                                                abs($0.time.timeIntervalSince(date)) < abs($1.time.timeIntervalSince(date))
-                                            }) {
-                                                syncedSelection = closest.time
-                                            }
-                                        }
-                                    default:
-                                        break
-                                    }
-                                }
-                                .onEnded { value in
-                                    // On drag/long-press release, end sync
-                                    if syncedSelection != nil {
-                                        syncedSelection = nil
-                                    }
-                                }
-                        )
                     }
                 }
             }
@@ -339,16 +334,18 @@ struct WaterChartPowerView: View {
     @State private var data: [DataPoint]
     @State private var chartVisible: Bool = false
     @State private var selectedDataPoint: DataPoint? = nil
+    @State private var lollipopVisible: Bool = true
+    
+    @Binding var syncedSelection: Date?
     
     let domain: ClosedRange<Date>?
-    @Binding var syncedSelection: Date?
     let timeRange: WaterChartTimeRange
     
-    init(domain: ClosedRange<Date>? = nil, syncedSelection: Binding<Date?>, timeRange: WaterChartTimeRange) {
+    init(domain: ClosedRange<Date>? = nil, timeRange: WaterChartTimeRange, syncedSelection: Binding<Date?>) {
         self._data = State(initialValue: Self.generateData())
         self.domain = domain
-        self._syncedSelection = syncedSelection
         self.timeRange = timeRange
+        self._syncedSelection = syncedSelection
     }
     
     static func generateData() -> [DataPoint] {
@@ -410,13 +407,12 @@ struct WaterChartPowerView: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
-            let showingSync = syncedSelection != nil
             Chart(sampledData) { point in
                 LineMark(
                     x: .value("Time", point.time),
                     y: .value("V", point.voltage)
                 )
-                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.cyan)
+                .foregroundStyle(Color.cyan)
                 .lineStyle(StrokeStyle(lineWidth: 2))
                 .opacity(chartVisible ? 1 : 0)
                 PointMark(
@@ -424,7 +420,7 @@ struct WaterChartPowerView: View {
                     y: .value("V", point.voltage)
                 )
                 .symbol(.circle)
-                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.cyan)
+                .foregroundStyle(Color.cyan)
                 .opacity(chartVisible ? 1 : 0)
                 
                 // Thresholds
@@ -453,99 +449,92 @@ struct WaterChartPowerView: View {
             }
             .chartOverlay { proxy in
                 GeometryReader { geo in
+                    let dragGesture = DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            if let date: Date = proxy.value(atX: value.location.x) {
+                                if let closest = sampledData.min(by: {
+                                    abs($0.time.timeIntervalSince(date)) < abs($1.time.timeIntervalSince(date))
+                                }) {
+                                    selectedDataPoint = closest
+                                    lollipopVisible = true
+                                }
+                            }
+                        }
+                    let longPressDrag = LongPressGesture(minimumDuration: 0.15)
+                        .sequenced(before: DragGesture(minimumDistance: 0))
+                        .onChanged { value in
+                            switch value {
+                            case .first(true):
+                                // long press began, no drag yet
+                                break
+                            case .second(true, let drag?):
+                                if let date: Date = proxy.value(atX: drag.location.x) {
+                                    syncedSelection = date
+                                    lollipopVisible = true
+                                }
+                            default:
+                                break
+                            }
+                        }
+                        .onEnded { _ in
+                            syncedSelection = nil
+                        }
+                    
                     Rectangle()
                         .fill(Color.clear)
                         .contentShape(Rectangle())
-                        .gesture(
-                            DragGesture(minimumDistance: 0)
-                                .onChanged { value in
-                                    if let date: Date = proxy.value(atX: value.location.x) {
-                                        if let closest = sampledData.min(by: {
-                                            abs($0.time.timeIntervalSince(date)) < abs($1.time.timeIntervalSince(date))
-                                        }) {
-                                            selectedDataPoint = closest
-                                            // If we're in sync mode, update the shared selection
-                                            if syncedSelection != nil {
-                                                syncedSelection = closest.time
-                                            }
-                                        }
-                                    }
-                                }
-                        )
+                        .gesture(longPressDrag.simultaneously(with: dragGesture))
                     
-                    // Show lollipop - use synced selection if available, otherwise local selection
-                    let displayPoint: DataPoint? = {
-                        if let syncTime = syncedSelection {
-                            return sampledData.min(by: {
-                                abs($0.time.timeIntervalSince(syncTime)) < abs($1.time.timeIntervalSince(syncTime))
-                            })
+                    let selectedTime: Date? = {
+                        if let synced = syncedSelection {
+                            return synced
+                        } else if let selected = selectedDataPoint?.time {
+                            return selected
                         } else {
-                            return selectedDataPoint
+                            return nil
                         }
                     }()
                     
-                    if let selected = displayPoint,
-                       let xPos = proxy.position(forX: selected.time),
-                       let yPos = proxy.position(forY: selected.voltage),
+                    if let selectedTime = selectedTime,
+                       let closest = sampledData.min(by: { abs($0.time.timeIntervalSince(selectedTime)) < abs($1.time.timeIntervalSince(selectedTime)) }),
+                       let xPos = proxy.position(forX: closest.time),
+                       let yPos = proxy.position(forY: closest.voltage),
                        let plotFrameAnchor = proxy.plotFrame {
                         let plotRect = geo[plotFrameAnchor]
-                        let isInSyncMode = syncedSelection != nil
                         
-                        Path { path in
-                            path.move(to: CGPoint(x: xPos, y: plotRect.minY))
-                            path.addLine(to: CGPoint(x: xPos, y: plotRect.maxY))
+                        if lollipopVisible {
+                            Path { path in
+                                path.move(to: CGPoint(x: xPos, y: plotRect.minY))
+                                path.addLine(to: CGPoint(x: xPos, y: plotRect.maxY))
+                            }
+                            .stroke(Color.cyan.opacity(0.7), style: StrokeStyle(lineWidth: 2, dash: [4,2]))
                         }
-                        .stroke((isInSyncMode ? Color.gray : Color.cyan).opacity(0.7), style: StrokeStyle(lineWidth: 2, dash: [4,2]))
                         
                         Rectangle()
-                            .fill(Color.cyan) // Keep original color even in sync mode
+                            .fill(Color.cyan)
                             .frame(width: 14, height: 14)
                             .position(x: xPos, y: yPos)
+                            .opacity(lollipopVisible ? 1 : 0)
                         
                         VStack(spacing: 2) {
-                            Text(selected.time.formatted(date: .omitted, time: .shortened))
+                            Text(closest.time.formatted(date: .omitted, time: .shortened))
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
-                            Text("\(Int(selected.voltage)) V")
+                            Text("\(Int(closest.voltage)) V")
                                 .font(.caption.bold())
                         }
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .background(RoundedRectangle(cornerRadius: 8).fill(Color(.systemBackground).opacity(0.95)))
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.cyan, lineWidth: 1)) // Keep original color border
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.cyan, lineWidth: 1))
                         .position(x: xPos, y: yPos - 30)
+                        .opacity(lollipopVisible ? 1 : 0)
                         .onTapGesture {
-                            // Always clear just this chart's selection
                             selectedDataPoint = nil
+                            withAnimation(.easeInOut(duration: 0.42)) {
+                                lollipopVisible = false
+                            }
                         }
-                        .gesture(
-                            LongPressGesture(minimumDuration: 0.15)
-                                .sequenced(before: DragGesture())
-                                .onChanged { value in
-                                    switch value {
-                                    case .first(true):
-                                        // Long press started - enter sync mode
-                                        syncedSelection = selected.time
-                                    case .second(true, let drag?):
-                                        // Dragging while in sync mode
-                                        if let date: Date = proxy.value(atX: drag.location.x) {
-                                            if let closest = sampledData.min(by: {
-                                                abs($0.time.timeIntervalSince(date)) < abs($1.time.timeIntervalSince(date))
-                                            }) {
-                                                syncedSelection = closest.time
-                                            }
-                                        }
-                                    default:
-                                        break
-                                    }
-                                }
-                                .onEnded { value in
-                                    // On drag/long-press release, end sync
-                                    if syncedSelection != nil {
-                                        syncedSelection = nil
-                                    }
-                                }
-                        )
                     }
                 }
             }
@@ -585,16 +574,18 @@ struct WaterChartOutputView: View {
     @State private var data: [DataPoint]
     @State private var chartVisible: Bool = false
     @State private var selectedDataPoint: DataPoint? = nil
+    @State private var lollipopVisible: Bool = true
+    
+    @Binding var syncedSelection: Date?
     
     let domain: ClosedRange<Date>?
-    @Binding var syncedSelection: Date?
     let timeRange: WaterChartTimeRange
     
-    init(domain: ClosedRange<Date>? = nil, syncedSelection: Binding<Date?>, timeRange: WaterChartTimeRange) {
+    init(domain: ClosedRange<Date>? = nil, timeRange: WaterChartTimeRange, syncedSelection: Binding<Date?>) {
         self._data = State(initialValue: Self.generateData())
         self.domain = domain
-        self._syncedSelection = syncedSelection
         self.timeRange = timeRange
+        self._syncedSelection = syncedSelection
     }
     
     static func generateData() -> [DataPoint] {
@@ -656,13 +647,12 @@ struct WaterChartOutputView: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
-            let showingSync = syncedSelection != nil
             Chart(sampledData) { point in
                 LineMark(
                     x: .value("Time", point.time),
                     y: .value("L", point.liters)
                 )
-                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.indigo)
+                .foregroundStyle(Color.indigo)
                 .lineStyle(StrokeStyle(lineWidth: 2))
                 .opacity(chartVisible ? 1 : 0)
                 PointMark(
@@ -670,7 +660,7 @@ struct WaterChartOutputView: View {
                     y: .value("L", point.liters)
                 )
                 .symbol(.circle)
-                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.indigo)
+                .foregroundStyle(Color.indigo)
                 .opacity(chartVisible ? 1 : 0)
                 
                 // Thresholds
@@ -699,99 +689,92 @@ struct WaterChartOutputView: View {
             }
             .chartOverlay { proxy in
                 GeometryReader { geo in
+                    let dragGesture = DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            if let date: Date = proxy.value(atX: value.location.x) {
+                                if let closest = sampledData.min(by: {
+                                    abs($0.time.timeIntervalSince(date)) < abs($1.time.timeIntervalSince(date))
+                                }) {
+                                    selectedDataPoint = closest
+                                    lollipopVisible = true
+                                }
+                            }
+                        }
+                    let longPressDrag = LongPressGesture(minimumDuration: 0.15)
+                        .sequenced(before: DragGesture(minimumDistance: 0))
+                        .onChanged { value in
+                            switch value {
+                            case .first(true):
+                                // long press began, no drag yet
+                                break
+                            case .second(true, let drag?):
+                                if let date: Date = proxy.value(atX: drag.location.x) {
+                                    syncedSelection = date
+                                    lollipopVisible = true
+                                }
+                            default:
+                                break
+                            }
+                        }
+                        .onEnded { _ in
+                            syncedSelection = nil
+                        }
+                    
                     Rectangle()
                         .fill(Color.clear)
                         .contentShape(Rectangle())
-                        .gesture(
-                            DragGesture(minimumDistance: 0)
-                                .onChanged { value in
-                                    if let date: Date = proxy.value(atX: value.location.x) {
-                                        if let closest = sampledData.min(by: {
-                                            abs($0.time.timeIntervalSince(date)) < abs($1.time.timeIntervalSince(date))
-                                        }) {
-                                            selectedDataPoint = closest
-                                            // If we're in sync mode, update the shared selection
-                                            if syncedSelection != nil {
-                                                syncedSelection = closest.time
-                                            }
-                                        }
-                                    }
-                                }
-                        )
+                        .gesture(longPressDrag.simultaneously(with: dragGesture))
                     
-                    // Show lollipop - use synced selection if available, otherwise local selection
-                    let displayPoint: DataPoint? = {
-                        if let syncTime = syncedSelection {
-                            return sampledData.min(by: {
-                                abs($0.time.timeIntervalSince(syncTime)) < abs($1.time.timeIntervalSince(syncTime))
-                            })
+                    let selectedTime: Date? = {
+                        if let synced = syncedSelection {
+                            return synced
+                        } else if let selected = selectedDataPoint?.time {
+                            return selected
                         } else {
-                            return selectedDataPoint
+                            return nil
                         }
                     }()
                     
-                    if let selected = displayPoint,
-                       let xPos = proxy.position(forX: selected.time),
-                       let yPos = proxy.position(forY: selected.liters),
+                    if let selectedTime = selectedTime,
+                       let closest = sampledData.min(by: { abs($0.time.timeIntervalSince(selectedTime)) < abs($1.time.timeIntervalSince(selectedTime)) }),
+                       let xPos = proxy.position(forX: closest.time),
+                       let yPos = proxy.position(forY: closest.liters),
                        let plotFrameAnchor = proxy.plotFrame {
                         let plotRect = geo[plotFrameAnchor]
-                        let isInSyncMode = syncedSelection != nil
                         
-                        Path { path in
-                            path.move(to: CGPoint(x: xPos, y: plotRect.minY))
-                            path.addLine(to: CGPoint(x: xPos, y: plotRect.maxY))
+                        if lollipopVisible {
+                            Path { path in
+                                path.move(to: CGPoint(x: xPos, y: plotRect.minY))
+                                path.addLine(to: CGPoint(x: xPos, y: plotRect.maxY))
+                            }
+                            .stroke(Color.indigo.opacity(0.7), style: StrokeStyle(lineWidth: 2, dash: [4,2]))
                         }
-                        .stroke((isInSyncMode ? Color.gray : Color.indigo).opacity(0.7), style: StrokeStyle(lineWidth: 2, dash: [4,2]))
                         
                         Circle()
-                            .fill(Color.indigo) // Keep original color even in sync mode
+                            .fill(Color.indigo)
                             .frame(width: 14, height: 14)
                             .position(x: xPos, y: yPos)
+                            .opacity(lollipopVisible ? 1 : 0)
                         
                         VStack(spacing: 2) {
-                            Text(selected.time.formatted(date: .omitted, time: .shortened))
+                            Text(closest.time.formatted(date: .omitted, time: .shortened))
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
-                            Text(String(format: "%.1f L", selected.liters))
+                            Text(String(format: "%.1f L", closest.liters))
                                 .font(.caption.bold())
                         }
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .background(RoundedRectangle(cornerRadius: 8).fill(Color(.systemBackground).opacity(0.95)))
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.indigo, lineWidth: 1)) // Keep original color border
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.indigo, lineWidth: 1))
                         .position(x: xPos, y: yPos - 30)
+                        .opacity(lollipopVisible ? 1 : 0)
                         .onTapGesture {
-                            // Always clear just this chart's selection
                             selectedDataPoint = nil
+                            withAnimation(.easeInOut(duration: 0.42)) {
+                                lollipopVisible = false
+                            }
                         }
-                        .gesture(
-                            LongPressGesture(minimumDuration: 0.15)
-                                .sequenced(before: DragGesture())
-                                .onChanged { value in
-                                    switch value {
-                                    case .first(true):
-                                        // Long press started - enter sync mode
-                                        syncedSelection = selected.time
-                                    case .second(true, let drag?):
-                                        // Dragging while in sync mode
-                                        if let date: Date = proxy.value(atX: drag.location.x) {
-                                            if let closest = sampledData.min(by: {
-                                                abs($0.time.timeIntervalSince(date)) < abs($1.time.timeIntervalSince(date))
-                                            }) {
-                                                syncedSelection = closest.time
-                                            }
-                                        }
-                                    default:
-                                        break
-                                    }
-                                }
-                                .onEnded { value in
-                                    // On drag/long-press release, end sync
-                                    if syncedSelection != nil {
-                                        syncedSelection = nil
-                                    }
-                                }
-                        )
                     }
                 }
             }
