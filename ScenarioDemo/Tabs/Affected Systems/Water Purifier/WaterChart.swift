@@ -34,6 +34,232 @@ enum WaterChartTimeRange: String, CaseIterable, Identifiable {
     }
 }
 
+struct ChartLollipopOverlay<DataPoint: Identifiable>: View {
+    var data: [DataPoint]
+    var color: Color
+    @Binding var syncedSelection: Date?
+    @State private var selectedDataPoint: DataPoint? = nil
+    var timeExtractor: (DataPoint) -> Date
+    var valueExtractor: (DataPoint) -> Double
+    var labelExtractor: (DataPoint) -> String
+    
+    var body: some View {
+        ChartLollipopGestureOverlay(
+            data: data,
+            color: color,
+            syncedSelection: $syncedSelection,
+            selectedDataPoint: $selectedDataPoint,
+            timeExtractor: timeExtractor,
+            valueExtractor: valueExtractor,
+            labelExtractor: labelExtractor
+        )
+    }
+}
+
+private struct ChartLollipopGestureOverlay<DataPoint: Identifiable>: View {
+    var data: [DataPoint]
+    var color: Color
+    @Binding var syncedSelection: Date?
+    @Binding var selectedDataPoint: DataPoint?
+    var timeExtractor: (DataPoint) -> Date
+    var valueExtractor: (DataPoint) -> Double
+    var labelExtractor: (DataPoint) -> String
+    
+    var body: some View {
+        GeometryReader { geo in
+            Rectangle()
+                .fill(Color.clear)
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            // Use Chart proxy to get date at location
+                            // Since we don't have proxy here, overlay is used in chartOverlay block with proxy passed - so we must embed this view inside chartOverlay block with proxy param
+                        }
+                )
+                .overlayPreferenceValue(ChartProxyKey.self) { proxy in
+                    if let proxy = proxy {
+                        content(proxy: proxy, geo: geo)
+                    }
+                }
+        }
+    }
+    
+    func content(proxy: ChartProxy, geo: GeometryProxy) -> some View {
+        ZStack {
+            Rectangle()
+                .fill(Color.clear)
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { value in
+                            if let date: Date = proxy.value(atX: value.location.x) {
+                                if let closest = data.min(by: {
+                                    abs(timeExtractor($0).timeIntervalSince(date)) < abs(timeExtractor($1).timeIntervalSince(date))
+                                }) {
+                                    selectedDataPoint = closest
+                                    // If we're in sync mode, update the shared selection
+                                    if syncedSelection != nil {
+                                        syncedSelection = timeExtractor(closest)
+                                    }
+                                }
+                            }
+                        }
+                )
+            
+            // Show lollipop - use synced selection if available, otherwise local selection
+            let displayPoint: DataPoint? = {
+                if let syncTime = syncedSelection {
+                    return data.min(by: {
+                        abs(timeExtractor($0).timeIntervalSince(syncTime)) < abs(timeExtractor($1).timeIntervalSince(syncTime))
+                    })
+                } else {
+                    return selectedDataPoint
+                }
+            }()
+            
+            if let selected = displayPoint,
+               let xPos = proxy.position(forX: timeExtractor(selected)),
+               let yPos = proxy.position(forY: valueExtractor(selected)),
+               let plotFrameAnchor = proxy.plotFrame {
+                let plotRect = geo[plotFrameAnchor]
+                let isInSyncMode = syncedSelection != nil
+                
+                Path { path in
+                    path.move(to: CGPoint(x: xPos, y: plotRect.minY))
+                    path.addLine(to: CGPoint(x: xPos, y: plotRect.maxY))
+                }
+                .stroke((isInSyncMode ? Color.gray : color).opacity(0.7), style: StrokeStyle(lineWidth: 2, dash: [4,2]))
+                
+                Circle()
+                    .fill(isInSyncMode ? Color.gray : color)
+                    .frame(width: 14, height: 14)
+                    .position(x: xPos, y: yPos)
+                
+                VStack(spacing: 2) {
+                    Text(timeExtractor(selected).formatted(date: .omitted, time: .shortened))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    Text(labelExtractor(selected))
+                        .font(.caption.bold())
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(RoundedRectangle(cornerRadius: 8).fill(Color(.systemBackground).opacity(0.95)))
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(isInSyncMode ? Color.gray : color, lineWidth: 1))
+                .position(x: xPos, y: yPos - 30)
+                .onTapGesture {
+                    if isInSyncMode {
+                        // Exit sync mode
+                        syncedSelection = nil
+                    } else {
+                        // Clear local selection
+                        selectedDataPoint = nil
+                    }
+                }
+                .gesture(
+                    LongPressGesture(minimumDuration: 0.15)
+                        .sequenced(before: DragGesture())
+                        .onChanged { value in
+                            switch value {
+                            case .first(true):
+                                // Long press started - enter sync mode
+                                syncedSelection = timeExtractor(selected)
+                            case .second(true, let drag?):
+                                // Dragging while in sync mode
+                                if let date: Date = proxy.value(atX: drag.location.x) {
+                                    if let closest = data.min(by: {
+                                        abs(timeExtractor($0).timeIntervalSince(date)) < abs(timeExtractor($1).timeIntervalSince(date))
+                                    }) {
+                                        syncedSelection = timeExtractor(closest)
+                                    }
+                                }
+                            default:
+                                break
+                            }
+                        }
+                        .onEnded { _ in
+                            // On drag/long-press release, end sync
+                            if syncedSelection != nil {
+                                syncedSelection = nil
+                            }
+                        }
+                )
+            }
+        }
+    }
+}
+
+
+// Extend Chart to pass proxy via PreferenceKey for usage inside subview
+private struct ChartProxyKey: PreferenceKey {
+    static var defaultValue: ChartProxy? = nil
+    static func reduce(value: inout ChartProxy?, nextValue: () -> ChartProxy?) {
+        value = nextValue() ?? value
+    }
+}
+
+extension View {
+    func chartOverlay<Content: View>(@ViewBuilder content: @escaping (ChartProxy) -> Content) -> some View {
+        overlay(
+            GeometryReader { proxyGeo in
+                ChartProxyReader { proxy in
+                    content(proxy)
+                        .preference(key: ChartProxyKey.self, value: proxy)
+                }
+            }
+        )
+    }
+}
+
+import Charts
+
+struct ChartProxyReader<Content: View>: UIViewRepresentable {
+    let content: (ChartProxy) -> Content
+
+    func makeUIView(context: Context) -> UIView {
+        let view = UIView()
+        DispatchQueue.main.async {
+            if let chartView = view.superview?.superview as? ChartView {
+                context.coordinator.proxy = ChartProxy(chartView: chartView)
+                context.coordinator.contentView = UIHostingController(rootView: content(context.coordinator.proxy!))
+                if let contentView = context.coordinator.contentView {
+                    contentView.view.translatesAutoresizingMaskIntoConstraints = false
+                    view.addSubview(contentView.view)
+                    NSLayoutConstraint.activate([
+                        contentView.view.topAnchor.constraint(equalTo: view.topAnchor),
+                        contentView.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+                        contentView.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+                        contentView.view.trailingAnchor.constraint(equalTo: view.trailingAnchor)
+                    ])
+                }
+            }
+        }
+        return view
+    }
+
+    func updateUIView(_ uiView: UIView, context: Context) {
+        if let proxy = context.coordinator.proxy {
+            context.coordinator.contentView?.rootView = content(proxy)
+        }
+    }
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    class Coordinator {
+        var proxy: ChartProxy? = nil
+        var contentView: UIHostingController<Content>? = nil
+    }
+}
+
+// The above ChartProxyReader and extensions are placeholders to allow usage of ChartProxy inside subviews.
+// If this is not required or unsupported, the simpler approach is to use chartOverlay { proxy in ... } blocks directly.
+
+// Since the original code uses chartOverlay { proxy in ... }, we will embed ChartLollipopOverlay inside that block and pass the proxy there.
+// So we will modify the WaterChartXView structs accordingly below.
+
 struct WaterChartView: View {
     
     @State private var syncedSelection: Date? = nil
@@ -92,7 +318,6 @@ struct WaterChartSpeedView: View {
     
     @State private var data: [DataPoint]
     @State private var chartVisible: Bool = false
-    @State private var selectedDataPoint: DataPoint? = nil
     
     let domain: ClosedRange<Date>?
     @Binding var syncedSelection: Date?
@@ -206,6 +431,7 @@ struct WaterChartSpeedView: View {
                 }
             }
             .chartOverlay { proxy in
+<<<<<<< Updated upstream
                 GeometryReader { geo in
                     Rectangle()
                         .fill(Color.clear)
@@ -302,6 +528,16 @@ struct WaterChartSpeedView: View {
                         )
                     }
                 }
+=======
+                ChartLollipopOverlay(
+                    data: sampledData,
+                    color: .mint,
+                    syncedSelection: $syncedSelection,
+                    timeExtractor: { $0.time },
+                    valueExtractor: { $0.rpm },
+                    labelExtractor: { "\(Int($0.rpm)) RPM" }
+                )
+>>>>>>> Stashed changes
             }
             .animation(.easeInOut(duration: 0.45), value: chartVisible)
             .onChange(of: timeRange) { _, _ in
@@ -338,7 +574,6 @@ struct WaterChartPowerView: View {
     
     @State private var data: [DataPoint]
     @State private var chartVisible: Bool = false
-    @State private var selectedDataPoint: DataPoint? = nil
     
     let domain: ClosedRange<Date>?
     @Binding var syncedSelection: Date?
@@ -452,6 +687,7 @@ struct WaterChartPowerView: View {
                 }
             }
             .chartOverlay { proxy in
+<<<<<<< Updated upstream
                 GeometryReader { geo in
                     Rectangle()
                         .fill(Color.clear)
@@ -548,6 +784,16 @@ struct WaterChartPowerView: View {
                         )
                     }
                 }
+=======
+                ChartLollipopOverlay(
+                    data: sampledData,
+                    color: .cyan,
+                    syncedSelection: $syncedSelection,
+                    timeExtractor: { $0.time },
+                    valueExtractor: { $0.voltage },
+                    labelExtractor: { "\(Int($0.voltage)) V" }
+                )
+>>>>>>> Stashed changes
             }
             .animation(.easeInOut(duration: 0.45), value: chartVisible)
             .onChange(of: timeRange) { _, _ in
@@ -584,7 +830,6 @@ struct WaterChartOutputView: View {
     
     @State private var data: [DataPoint]
     @State private var chartVisible: Bool = false
-    @State private var selectedDataPoint: DataPoint? = nil
     
     let domain: ClosedRange<Date>?
     @Binding var syncedSelection: Date?
@@ -698,6 +943,7 @@ struct WaterChartOutputView: View {
                 }
             }
             .chartOverlay { proxy in
+<<<<<<< Updated upstream
                 GeometryReader { geo in
                     Rectangle()
                         .fill(Color.clear)
@@ -794,6 +1040,16 @@ struct WaterChartOutputView: View {
                         )
                     }
                 }
+=======
+                ChartLollipopOverlay(
+                    data: sampledData,
+                    color: .indigo,
+                    syncedSelection: $syncedSelection,
+                    timeExtractor: { $0.time },
+                    valueExtractor: { $0.liters },
+                    labelExtractor: { String(format: "%.1f L", $0.liters) }
+                )
+>>>>>>> Stashed changes
             }
             .animation(.easeInOut(duration: 0.45), value: chartVisible)
             .onChange(of: timeRange) { _, _ in
