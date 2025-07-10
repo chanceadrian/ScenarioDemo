@@ -17,6 +17,23 @@ func computePaddedTimeDomain(_ arrays: [[Date]]) -> ClosedRange<Date> {
     return min...paddedMax
 }
 
+enum WaterChartTimeRange: String, CaseIterable, Identifiable {
+    case thirtyMin = "30m"
+    case oneHour = "1h"
+    case twoHour = "2h"
+    case threeHour = "3h"
+
+    var id: String { rawValue }
+    var minutes: Int {
+        switch self {
+        case .thirtyMin: return 30
+        case .oneHour: return 60
+        case .twoHour: return 120
+        case .threeHour: return 180
+        }
+    }
+}
+
 struct ChartLollipopOverlay<DataPoint: Identifiable>: View {
     let proxy: ChartProxy
     let geo: GeometryProxy
@@ -133,6 +150,7 @@ struct ChartLollipopOverlay<DataPoint: Identifiable>: View {
 struct WaterChartView: View {
     
     @State private var syncedSelection: Date? = nil
+    @State private var selectedTimeRange: WaterChartTimeRange = .thirtyMin
     
     let selectedIndices: Set<Int>
     
@@ -145,22 +163,35 @@ struct WaterChartView: View {
     }
     
     var body: some View {
-        VStack(spacing: 20) {
-            if selectedIndices.contains(0) {
-                WaterChartSpeedView(domain: timeDomain, syncedSelection: $syncedSelection)
-                    .transition(.scale(scale: 0.92).combined(with: .opacity))
+        VStack(spacing: 12) {
+            Picker("Time Range", selection: Binding(
+                get: { selectedTimeRange },
+                set: { newValue in
+                    withAnimation(.easeInOut(duration: 0.45)) {
+                        selectedTimeRange = newValue
+                    }
+                })) {
+                    ForEach(WaterChartTimeRange.allCases) { range in
+                        Text(range.rawValue).tag(range)
+                    }
             }
-            if selectedIndices.contains(1) {
-                WaterChartPowerView(domain: timeDomain, syncedSelection: $syncedSelection)
-                    .transition(.scale(scale: 0.92).combined(with: .opacity))
+            .pickerStyle(.segmented)
+            .padding(.horizontal)
+            
+            VStack(spacing: 20) {
+                if selectedIndices.contains(0) {
+                    WaterChartSpeedView(domain: timeDomain, syncedSelection: $syncedSelection, timeRange: selectedTimeRange)
+                }
+                if selectedIndices.contains(1) {
+                    WaterChartPowerView(domain: timeDomain, syncedSelection: $syncedSelection, timeRange: selectedTimeRange)
+                }
+                if selectedIndices.contains(2) {
+                    WaterChartOutputView(domain: timeDomain, syncedSelection: $syncedSelection, timeRange: selectedTimeRange)
+                }
             }
-            if selectedIndices.contains(2) {
-                WaterChartOutputView(domain: timeDomain, syncedSelection: $syncedSelection)
-                    .transition(.scale(scale: 0.92).combined(with: .opacity))
-            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .animation(.easeInOut(duration: 0.45), value: selectedTimeRange)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .animation(.spring(response: 0.38, dampingFraction: 0.74), value: selectedIndices)
     }
 }
 
@@ -177,36 +208,74 @@ struct WaterChartSpeedView: View {
     
     let domain: ClosedRange<Date>?
     @Binding var syncedSelection: Date?
+    let timeRange: WaterChartTimeRange
     
-    init(domain: ClosedRange<Date>? = nil, syncedSelection: Binding<Date?>) {
+    init(domain: ClosedRange<Date>? = nil, syncedSelection: Binding<Date?>, timeRange: WaterChartTimeRange) {
         self._data = State(initialValue: Self.generateData())
         self.domain = domain
         self._syncedSelection = syncedSelection
+        self.timeRange = timeRange
     }
     
     static func generateData() -> [DataPoint] {
         let calendar = Calendar.current
-        let today = Date()
-        let startComponents = calendar.dateComponents([.year, .month, .day], from: today)
-        let startTime = calendar.date(bySettingHour: 16, minute: 41, second: 0, of: calendar.date(from: startComponents)!)!
-        
+        let now = Date()
+        let startTime = calendar.date(byAdding: .minute, value: -179, to: now)!
+        let dipStart = calendar.date(byAdding: .minute, value: -10, to: now)!
+
         var points = [DataPoint]()
-        for i in 0..<20 {
-            let time = calendar.date(byAdding: .minute, value: i, to: startTime)!
-            if i <= 8 {
+        var currentTime = startTime
+        var minuteIndex = 0
+        while currentTime <= now {
+            if currentTime < dipStart {
                 // ~3000 RPM with slight random variation
                 let rpm = 2950 + Double.random(in: 0...100)
-                points.append(DataPoint(time: time, rpm: rpm))
+                points.append(DataPoint(time: currentTime, rpm: rpm))
             } else {
                 // just above 0 (10–80 RPM with some random variation)
                 let rpm = Double.random(in: 10...80)
-                points.append(DataPoint(time: time, rpm: rpm))
+                points.append(DataPoint(time: currentTime, rpm: rpm))
             }
+            currentTime = calendar.date(byAdding: .minute, value: 1, to: currentTime)!
+            minuteIndex += 1
         }
         return points
     }
     
+    var drasticChangeTime: Date? {
+        for i in 1..<data.count {
+            if data[i-1].rpm - data[i].rpm > 500 {
+                return data[i].time
+            }
+        }
+        return nil
+    }
+    
     var body: some View {
+        let now = Date()
+        let minTime = Calendar.current.date(byAdding: .minute, value: -timeRange.minutes + 1, to: now)!
+        let visibleData = data.filter { $0.time >= minTime && $0.time <= now }
+        let visibleDomain = minTime...now
+        
+        let stride: Int = {
+            switch timeRange {
+            case .thirtyMin: return 1
+            case .oneHour: return 2
+            case .twoHour: return 4
+            case .threeHour: return 6
+            }
+        }()
+        let sampledData = visibleData.enumerated().compactMap { idx, dp in idx % stride == 0 ? dp : nil }
+        
+        let xAxisStride: Int = {
+            switch timeRange {
+            case .thirtyMin: return 3
+            case .oneHour: return 6
+            case .twoHour: return 12
+            case .threeHour: return 18
+            }
+        }()
+        
         VStack(alignment: .leading) {
             HStack {
                 Text("Water Purifier Impeller Speed")
@@ -216,8 +285,13 @@ struct WaterChartSpeedView: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
+            if let drasticTime = drasticChangeTime {
+                Text("Significant drop detected at \(drasticTime.formatted(date: .omitted, time: .shortened))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             let showingSync = syncedSelection != nil
-            Chart(data) { point in
+            Chart(sampledData) { point in
                 LineMark(
                     x: .value("Time", point.time),
                     y: .value("RPM", point.rpm)
@@ -242,10 +316,10 @@ struct WaterChartSpeedView: View {
                         Text("Low").foregroundColor(.gray).font(.footnote)
                     }
             }
-            .chartXScale(domain: domain ?? (data.first?.time ?? Date())...(data.last?.time ?? Date()))
+            .chartXScale(domain: visibleDomain)
             .chartYAxis { AxisMarks(preset: .inset) }
             .chartXAxis {
-                AxisMarks(values: .stride(by: .minute, count: 3)) { value in
+                AxisMarks(values: .stride(by: .minute, count: xAxisStride)) { value in
                     AxisGridLine()
                     AxisValueLabel() {
                         if let date = value.as(Date.self) {
@@ -254,12 +328,14 @@ struct WaterChartSpeedView: View {
                     }
                 }
             }
+            .id(timeRange.rawValue)
+            .transition(.opacity)
             .chartOverlay { proxy in
                 GeometryReader { geo in
                     ChartLollipopOverlay(
                         proxy: proxy,
                         geo: geo,
-                        data: data,
+                        data: sampledData,
                         selected: $selectedDataPoint,
                         xValue: { $0.time },
                         yValue: { $0.rpm },
@@ -288,36 +364,74 @@ struct WaterChartPowerView: View {
     
     let domain: ClosedRange<Date>?
     @Binding var syncedSelection: Date?
+    let timeRange: WaterChartTimeRange
     
-    init(domain: ClosedRange<Date>? = nil, syncedSelection: Binding<Date?>) {
+    init(domain: ClosedRange<Date>? = nil, syncedSelection: Binding<Date?>, timeRange: WaterChartTimeRange) {
         self._data = State(initialValue: Self.generateData())
         self.domain = domain
         self._syncedSelection = syncedSelection
+        self.timeRange = timeRange
     }
     
     static func generateData() -> [DataPoint] {
         let calendar = Calendar.current
-        let today = Date()
-        let startComponents = calendar.dateComponents([.year, .month, .day], from: today)
-        let startTime = calendar.date(bySettingHour: 16, minute: 41, second: 0, of: calendar.date(from: startComponents)!)!
+        let now = Date()
+        let startTime = calendar.date(byAdding: .minute, value: -179, to: now)!
+        let dipStart = calendar.date(byAdding: .minute, value: -10, to: now)!
         
         var points = [DataPoint]()
-        for i in 0..<20 {
-            let time = calendar.date(byAdding: .minute, value: i, to: startTime)!
-            if i <= 8 {
+        var currentTime = startTime
+        var minuteIndex = 0
+        while currentTime <= now {
+            if currentTime < dipStart {
                 // ~300V with slight random variation
                 let voltage = 290 + Double.random(in: 0...20)
-                points.append(DataPoint(time: time, voltage: voltage))
+                points.append(DataPoint(time: currentTime, voltage: voltage))
             } else {
                 // 650V ±10V variation
                 let voltage = 640 + Double.random(in: 0...20)
-                points.append(DataPoint(time: time, voltage: voltage))
+                points.append(DataPoint(time: currentTime, voltage: voltage))
             }
+            currentTime = calendar.date(byAdding: .minute, value: 1, to: currentTime)!
+            minuteIndex += 1
         }
         return points
     }
     
+    var drasticChangeTime: Date? {
+        for i in 1..<data.count {
+            if data[i].voltage - data[i-1].voltage > 250 {
+                return data[i].time
+            }
+        }
+        return nil
+    }
+    
     var body: some View {
+        let now = Date()
+        let minTime = Calendar.current.date(byAdding: .minute, value: -timeRange.minutes + 1, to: now)!
+        let visibleData = data.filter { $0.time >= minTime && $0.time <= now }
+        let visibleDomain = minTime...now
+        
+        let stride: Int = {
+            switch timeRange {
+            case .thirtyMin: return 1
+            case .oneHour: return 2
+            case .twoHour: return 4
+            case .threeHour: return 6
+            }
+        }()
+        let sampledData = visibleData.enumerated().compactMap { idx, dp in idx % stride == 0 ? dp : nil }
+        
+        let xAxisStride: Int = {
+            switch timeRange {
+            case .thirtyMin: return 3
+            case .oneHour: return 6
+            case .twoHour: return 12
+            case .threeHour: return 18
+            }
+        }()
+        
         VStack(alignment: .leading) {
             HStack {
                 Text("Water Purifier Impeller Power Draw")
@@ -327,8 +441,13 @@ struct WaterChartPowerView: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
+            if let drasticTime = drasticChangeTime {
+                Text("Significant spike detected at \(drasticTime.formatted(date: .omitted, time: .shortened))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             let showingSync = syncedSelection != nil
-            Chart(data) { point in
+            Chart(sampledData) { point in
                 LineMark(
                     x: .value("Time", point.time),
                     y: .value("V", point.voltage)
@@ -345,7 +464,7 @@ struct WaterChartPowerView: View {
                 // Thresholds
                 let highThreshold = 360.0
 
-                // Low threshold line and zone
+                // High threshold line and zone
                 RuleMark(y: .value("highThreshold", highThreshold))
                     .foregroundStyle(.gray)
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [6, 4]))
@@ -353,10 +472,10 @@ struct WaterChartPowerView: View {
                         Text("High").foregroundColor(.gray).font(.footnote)
                     }
             }
-            .chartXScale(domain: domain ?? (data.first?.time ?? Date())...(data.last?.time ?? Date()))
+            .chartXScale(domain: visibleDomain)
             .chartYAxis { AxisMarks(preset: .inset) }
             .chartXAxis {
-                AxisMarks(values: .stride(by: .minute, count: 3)) { value in
+                AxisMarks(values: .stride(by: .minute, count: xAxisStride)) { value in
                     AxisGridLine()
                     AxisValueLabel() {
                         if let date = value.as(Date.self) {
@@ -365,12 +484,14 @@ struct WaterChartPowerView: View {
                     }
                 }
             }
+            .id(timeRange.rawValue)
+            .transition(.opacity)
             .chartOverlay { proxy in
                 GeometryReader { geo in
                     ChartLollipopOverlay(
                         proxy: proxy,
                         geo: geo,
-                        data: data,
+                        data: sampledData,
                         selected: $selectedDataPoint,
                         xValue: { $0.time },
                         yValue: { $0.voltage },
@@ -399,36 +520,74 @@ struct WaterChartOutputView: View {
     
     let domain: ClosedRange<Date>?
     @Binding var syncedSelection: Date?
+    let timeRange: WaterChartTimeRange
     
-    init(domain: ClosedRange<Date>? = nil, syncedSelection: Binding<Date?>) {
+    init(domain: ClosedRange<Date>? = nil, syncedSelection: Binding<Date?>, timeRange: WaterChartTimeRange) {
         self._data = State(initialValue: Self.generateData())
         self.domain = domain
         self._syncedSelection = syncedSelection
+        self.timeRange = timeRange
     }
     
     static func generateData() -> [DataPoint] {
         let calendar = Calendar.current
-        let today = Date()
-        let startComponents = calendar.dateComponents([.year, .month, .day], from: today)
-        let startTime = calendar.date(bySettingHour: 16, minute: 41, second: 0, of: calendar.date(from: startComponents)!)!
+        let now = Date()
+        let startTime = calendar.date(byAdding: .minute, value: -179, to: now)!
+        let dipStart = calendar.date(byAdding: .minute, value: -10, to: now)!
         
         var points = [DataPoint]()
-        for i in 0..<20 {
-            let time = calendar.date(byAdding: .minute, value: i, to: startTime)!
-            if i <= 8 {
+        var currentTime = startTime
+        var minuteIndex = 0
+        while currentTime <= now {
+            if currentTime < dipStart {
                 // 8L ±0.2L variation
                 let liters = 7.8 + Double.random(in: 0...0.4)
-                points.append(DataPoint(time: time, liters: liters))
+                points.append(DataPoint(time: currentTime, liters: liters))
             } else {
                 // drops to 0 intermittently (alternate between 0 and 0.3L)
-                let liters = (i % 2 == 0) ? 0.0 : 0.3
-                points.append(DataPoint(time: time, liters: liters))
+                let liters = (minuteIndex % 2 == 0) ? 0.0 : 0.3
+                points.append(DataPoint(time: currentTime, liters: liters))
             }
+            currentTime = calendar.date(byAdding: .minute, value: 1, to: currentTime)!
+            minuteIndex += 1
         }
         return points
     }
     
+    var drasticChangeTime: Date? {
+        for i in 1..<data.count {
+            if data[i-1].liters - data[i].liters > 2.0 {
+                return data[i].time
+            }
+        }
+        return nil
+    }
+    
     var body: some View {
+        let now = Date()
+        let minTime = Calendar.current.date(byAdding: .minute, value: -timeRange.minutes + 1, to: now)!
+        let visibleData = data.filter { $0.time >= minTime && $0.time <= now }
+        let visibleDomain = minTime...now
+        
+        let stride: Int = {
+            switch timeRange {
+            case .thirtyMin: return 1
+            case .oneHour: return 2
+            case .twoHour: return 4
+            case .threeHour: return 6
+            }
+        }()
+        let sampledData = visibleData.enumerated().compactMap { idx, dp in idx % stride == 0 ? dp : nil }
+        
+        let xAxisStride: Int = {
+            switch timeRange {
+            case .thirtyMin: return 3
+            case .oneHour: return 6
+            case .twoHour: return 12
+            case .threeHour: return 18
+            }
+        }()
+        
         VStack(alignment: .leading) {
             HStack {
                 Text("Water Purifier Output")
@@ -438,8 +597,13 @@ struct WaterChartOutputView: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
+            if let drasticTime = drasticChangeTime {
+                Text("Significant output drop detected at \(drasticTime.formatted(date: .omitted, time: .shortened))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             let showingSync = syncedSelection != nil
-            Chart(data) { point in
+            Chart(sampledData) { point in
                 LineMark(
                     x: .value("Time", point.time),
                     y: .value("L", point.liters)
@@ -464,10 +628,10 @@ struct WaterChartOutputView: View {
                         Text("Low").foregroundColor(.gray).font(.footnote)
                     }
             }
-            .chartXScale(domain: domain ?? (data.first?.time ?? Date())...(data.last?.time ?? Date()))
+            .chartXScale(domain: visibleDomain)
             .chartYAxis { AxisMarks(preset: .inset) }
             .chartXAxis {
-                AxisMarks(values: .stride(by: .minute, count: 3)) { value in
+                AxisMarks(values: .stride(by: .minute, count: xAxisStride)) { value in
                     AxisGridLine()
                     AxisValueLabel() {
                         if let date = value.as(Date.self) {
@@ -476,12 +640,14 @@ struct WaterChartOutputView: View {
                     }
                 }
             }
+            .id(timeRange.rawValue)
+            .transition(.opacity)
             .chartOverlay { proxy in
                 GeometryReader { geo in
                     ChartLollipopOverlay(
                         proxy: proxy,
                         geo: geo,
-                        data: data,
+                        data: sampledData,
                         selected: $selectedDataPoint,
                         xValue: { $0.time },
                         yValue: { $0.liters },
