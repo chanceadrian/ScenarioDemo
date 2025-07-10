@@ -34,232 +34,6 @@ enum WaterChartTimeRange: String, CaseIterable, Identifiable {
     }
 }
 
-struct ChartLollipopOverlay<DataPoint: Identifiable>: View {
-    var data: [DataPoint]
-    var color: Color
-    @Binding var syncedSelection: Date?
-    @State private var selectedDataPoint: DataPoint? = nil
-    var timeExtractor: (DataPoint) -> Date
-    var valueExtractor: (DataPoint) -> Double
-    var labelExtractor: (DataPoint) -> String
-    
-    var body: some View {
-        ChartLollipopGestureOverlay(
-            data: data,
-            color: color,
-            syncedSelection: $syncedSelection,
-            selectedDataPoint: $selectedDataPoint,
-            timeExtractor: timeExtractor,
-            valueExtractor: valueExtractor,
-            labelExtractor: labelExtractor
-        )
-    }
-}
-
-private struct ChartLollipopGestureOverlay<DataPoint: Identifiable>: View {
-    var data: [DataPoint]
-    var color: Color
-    @Binding var syncedSelection: Date?
-    @Binding var selectedDataPoint: DataPoint?
-    var timeExtractor: (DataPoint) -> Date
-    var valueExtractor: (DataPoint) -> Double
-    var labelExtractor: (DataPoint) -> String
-    
-    var body: some View {
-        GeometryReader { geo in
-            Rectangle()
-                .fill(Color.clear)
-                .contentShape(Rectangle())
-                .gesture(
-                    DragGesture(minimumDistance: 0)
-                        .onChanged { value in
-                            // Use Chart proxy to get date at location
-                            // Since we don't have proxy here, overlay is used in chartOverlay block with proxy passed - so we must embed this view inside chartOverlay block with proxy param
-                        }
-                )
-                .overlayPreferenceValue(ChartProxyKey.self) { proxy in
-                    if let proxy = proxy {
-                        content(proxy: proxy, geo: geo)
-                    }
-                }
-        }
-    }
-    
-    func content(proxy: ChartProxy, geo: GeometryProxy) -> some View {
-        ZStack {
-            Rectangle()
-                .fill(Color.clear)
-                .contentShape(Rectangle())
-                .gesture(
-                    DragGesture(minimumDistance: 0)
-                        .onChanged { value in
-                            if let date: Date = proxy.value(atX: value.location.x) {
-                                if let closest = data.min(by: {
-                                    abs(timeExtractor($0).timeIntervalSince(date)) < abs(timeExtractor($1).timeIntervalSince(date))
-                                }) {
-                                    selectedDataPoint = closest
-                                    // If we're in sync mode, update the shared selection
-                                    if syncedSelection != nil {
-                                        syncedSelection = timeExtractor(closest)
-                                    }
-                                }
-                            }
-                        }
-                )
-            
-            // Show lollipop - use synced selection if available, otherwise local selection
-            let displayPoint: DataPoint? = {
-                if let syncTime = syncedSelection {
-                    return data.min(by: {
-                        abs(timeExtractor($0).timeIntervalSince(syncTime)) < abs(timeExtractor($1).timeIntervalSince(syncTime))
-                    })
-                } else {
-                    return selectedDataPoint
-                }
-            }()
-            
-            if let selected = displayPoint,
-               let xPos = proxy.position(forX: timeExtractor(selected)),
-               let yPos = proxy.position(forY: valueExtractor(selected)),
-               let plotFrameAnchor = proxy.plotFrame {
-                let plotRect = geo[plotFrameAnchor]
-                let isInSyncMode = syncedSelection != nil
-                
-                Path { path in
-                    path.move(to: CGPoint(x: xPos, y: plotRect.minY))
-                    path.addLine(to: CGPoint(x: xPos, y: plotRect.maxY))
-                }
-                .stroke((isInSyncMode ? Color.gray : color).opacity(0.7), style: StrokeStyle(lineWidth: 2, dash: [4,2]))
-                
-                Circle()
-                    .fill(isInSyncMode ? Color.gray : color)
-                    .frame(width: 14, height: 14)
-                    .position(x: xPos, y: yPos)
-                
-                VStack(spacing: 2) {
-                    Text(timeExtractor(selected).formatted(date: .omitted, time: .shortened))
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                    Text(labelExtractor(selected))
-                        .font(.caption.bold())
-                }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
-                .background(RoundedRectangle(cornerRadius: 8).fill(Color(.systemBackground).opacity(0.95)))
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(isInSyncMode ? Color.gray : color, lineWidth: 1))
-                .position(x: xPos, y: yPos - 30)
-                .onTapGesture {
-                    if isInSyncMode {
-                        // Exit sync mode
-                        syncedSelection = nil
-                    } else {
-                        // Clear local selection
-                        selectedDataPoint = nil
-                    }
-                }
-                .gesture(
-                    LongPressGesture(minimumDuration: 0.15)
-                        .sequenced(before: DragGesture())
-                        .onChanged { value in
-                            switch value {
-                            case .first(true):
-                                // Long press started - enter sync mode
-                                syncedSelection = timeExtractor(selected)
-                            case .second(true, let drag?):
-                                // Dragging while in sync mode
-                                if let date: Date = proxy.value(atX: drag.location.x) {
-                                    if let closest = data.min(by: {
-                                        abs(timeExtractor($0).timeIntervalSince(date)) < abs(timeExtractor($1).timeIntervalSince(date))
-                                    }) {
-                                        syncedSelection = timeExtractor(closest)
-                                    }
-                                }
-                            default:
-                                break
-                            }
-                        }
-                        .onEnded { _ in
-                            // On drag/long-press release, end sync
-                            if syncedSelection != nil {
-                                syncedSelection = nil
-                            }
-                        }
-                )
-            }
-        }
-    }
-}
-
-
-// Extend Chart to pass proxy via PreferenceKey for usage inside subview
-private struct ChartProxyKey: PreferenceKey {
-    static var defaultValue: ChartProxy? = nil
-    static func reduce(value: inout ChartProxy?, nextValue: () -> ChartProxy?) {
-        value = nextValue() ?? value
-    }
-}
-
-extension View {
-    func chartOverlay<Content: View>(@ViewBuilder content: @escaping (ChartProxy) -> Content) -> some View {
-        overlay(
-            GeometryReader { proxyGeo in
-                ChartProxyReader { proxy in
-                    content(proxy)
-                        .preference(key: ChartProxyKey.self, value: proxy)
-                }
-            }
-        )
-    }
-}
-
-import Charts
-
-struct ChartProxyReader<Content: View>: UIViewRepresentable {
-    let content: (ChartProxy) -> Content
-
-    func makeUIView(context: Context) -> UIView {
-        let view = UIView()
-        DispatchQueue.main.async {
-            if let chartView = view.superview?.superview as? ChartView {
-                context.coordinator.proxy = ChartProxy(chartView: chartView)
-                context.coordinator.contentView = UIHostingController(rootView: content(context.coordinator.proxy!))
-                if let contentView = context.coordinator.contentView {
-                    contentView.view.translatesAutoresizingMaskIntoConstraints = false
-                    view.addSubview(contentView.view)
-                    NSLayoutConstraint.activate([
-                        contentView.view.topAnchor.constraint(equalTo: view.topAnchor),
-                        contentView.view.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-                        contentView.view.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-                        contentView.view.trailingAnchor.constraint(equalTo: view.trailingAnchor)
-                    ])
-                }
-            }
-        }
-        return view
-    }
-
-    func updateUIView(_ uiView: UIView, context: Context) {
-        if let proxy = context.coordinator.proxy {
-            context.coordinator.contentView?.rootView = content(proxy)
-        }
-    }
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator()
-    }
-
-    class Coordinator {
-        var proxy: ChartProxy? = nil
-        var contentView: UIHostingController<Content>? = nil
-    }
-}
-
-// The above ChartProxyReader and extensions are placeholders to allow usage of ChartProxy inside subviews.
-// If this is not required or unsupported, the simpler approach is to use chartOverlay { proxy in ... } blocks directly.
-
-// Since the original code uses chartOverlay { proxy in ... }, we will embed ChartLollipopOverlay inside that block and pass the proxy there.
-// So we will modify the WaterChartXView structs accordingly below.
-
 struct WaterChartView: View {
     
     @State private var syncedSelection: Date? = nil
@@ -289,21 +63,25 @@ struct WaterChartView: View {
                     }
             }
             .pickerStyle(.segmented)
-            .padding(.horizontal)
             
             VStack(spacing: 20) {
                 if selectedIndices.contains(0) {
                     WaterChartSpeedView(domain: timeDomain, syncedSelection: $syncedSelection, timeRange: selectedTimeRange)
+                        .transition(.scale(scale: 0.92).combined(with: .opacity))
                 }
                 if selectedIndices.contains(1) {
                     WaterChartPowerView(domain: timeDomain, syncedSelection: $syncedSelection, timeRange: selectedTimeRange)
+                        .transition(.scale(scale: 0.92).combined(with: .opacity))
+
                 }
                 if selectedIndices.contains(2) {
                     WaterChartOutputView(domain: timeDomain, syncedSelection: $syncedSelection, timeRange: selectedTimeRange)
+                        .transition(.scale(scale: 0.92).combined(with: .opacity))
+
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .animation(.easeInOut(duration: 0.45), value: selectedTimeRange)
+            .animation(.spring(response: 0.38, dampingFraction: 0.74), value: selectedIndices)
         }
     }
 }
@@ -317,7 +95,7 @@ struct WaterChartSpeedView: View {
     }
     
     @State private var data: [DataPoint]
-    @State private var chartVisible: Bool = false
+    @State private var selectedDataPoint: DataPoint? = nil
     
     let domain: ClosedRange<Date>?
     @Binding var syncedSelection: Date?
@@ -373,10 +151,10 @@ struct WaterChartSpeedView: View {
         
         let xAxisStride: Int = {
             switch timeRange {
-            case .thirtyMin: return 3
-            case .oneHour: return 6
-            case .twoHour: return 12
-            case .threeHour: return 18
+            case .thirtyMin: return 6
+            case .oneHour: return 12
+            case .twoHour: return 18
+            case .threeHour: return 24
             }
         }()
         
@@ -395,16 +173,14 @@ struct WaterChartSpeedView: View {
                     x: .value("Time", point.time),
                     y: .value("RPM", point.rpm)
                 )
-                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.mint)
+                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.teal)
                 .lineStyle(StrokeStyle(lineWidth: 2))
-                .opacity(chartVisible ? 1 : 0)
                 PointMark(
                     x: .value("Time", point.time),
                     y: .value("RPM", point.rpm)
                 )
                 .symbol(Circle())
-                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.mint)
-                .opacity(chartVisible ? 1 : 0)
+                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.teal)
                 
                 // Thresholds
                 let lowThreshold = 2100
@@ -416,7 +192,6 @@ struct WaterChartSpeedView: View {
                     .annotation(position: .top, alignment: .leading) {
                         Text("Low").foregroundColor(.gray).font(.footnote)
                     }
-                    .opacity(chartVisible ? 1 : 0)
             }
             .chartXScale(domain: visibleDomain)
             .chartYAxis { AxisMarks(preset: .inset) }
@@ -431,7 +206,6 @@ struct WaterChartSpeedView: View {
                 }
             }
             .chartOverlay { proxy in
-<<<<<<< Updated upstream
                 GeometryReader { geo in
                     Rectangle()
                         .fill(Color.clear)
@@ -475,24 +249,25 @@ struct WaterChartSpeedView: View {
                             path.move(to: CGPoint(x: xPos, y: plotRect.minY))
                             path.addLine(to: CGPoint(x: xPos, y: plotRect.maxY))
                         }
-                        .stroke((isInSyncMode ? Color.gray : Color.mint).opacity(0.7), style: StrokeStyle(lineWidth: 2, dash: [4,2]))
+                        .stroke(Color.teal, style: StrokeStyle(lineWidth: 2, dash: [4,2]))
                         
                         Circle()
-                            .fill(Color.mint) // Keep original color even in sync mode
-                            .frame(width: 14, height: 14)
+                            .fill(Color.teal) // Keep original color even in sync mode
+                            .frame(width: 16, height: 16)
                             .position(x: xPos, y: yPos)
                         
                         VStack(spacing: 2) {
                             Text(selected.time.formatted(date: .omitted, time: .shortened))
                                 .font(.caption2)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(.white)
                             Text("\(Int(selected.rpm)) RPM")
                                 .font(.caption.bold())
+                                .foregroundStyle(.white)
                         }
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(RoundedRectangle(cornerRadius: 8).fill(Color(.systemBackground).opacity(0.95)))
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.mint, lineWidth: 1)) // Keep original color border
+                        .background(RoundedRectangle(cornerRadius: 8).fill(Color.teal))
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.teal, lineWidth: 1)) // Keep original color border
                         .position(x: xPos, y: yPos - 30)
                         .onTapGesture {
                             // Always clear just this chart's selection
@@ -528,36 +303,6 @@ struct WaterChartSpeedView: View {
                         )
                     }
                 }
-=======
-                ChartLollipopOverlay(
-                    data: sampledData,
-                    color: .mint,
-                    syncedSelection: $syncedSelection,
-                    timeExtractor: { $0.time },
-                    valueExtractor: { $0.rpm },
-                    labelExtractor: { "\(Int($0.rpm)) RPM" }
-                )
->>>>>>> Stashed changes
-            }
-            .animation(.easeInOut(duration: 0.45), value: chartVisible)
-            .onChange(of: timeRange) { _, _ in
-                chartVisible = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                    withAnimation(.easeInOut(duration: 0.45)) {
-                        chartVisible = true
-                    }
-                }
-            }
-            .onAppear {
-                chartVisible = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                    withAnimation(.easeInOut(duration: 0.45)) {
-                        chartVisible = true
-                    }
-                }
-            }
-            .onDisappear {
-                chartVisible = false
             }
         }
         .frame(maxWidth: .infinity)
@@ -573,7 +318,7 @@ struct WaterChartPowerView: View {
     }
     
     @State private var data: [DataPoint]
-    @State private var chartVisible: Bool = false
+    @State private var selectedDataPoint: DataPoint? = nil
     
     let domain: ClosedRange<Date>?
     @Binding var syncedSelection: Date?
@@ -629,10 +374,10 @@ struct WaterChartPowerView: View {
         
         let xAxisStride: Int = {
             switch timeRange {
-            case .thirtyMin: return 3
-            case .oneHour: return 6
-            case .twoHour: return 12
-            case .threeHour: return 18
+            case .thirtyMin: return 6
+            case .oneHour: return 12
+            case .twoHour: return 18
+            case .threeHour: return 24
             }
         }()
         
@@ -651,16 +396,14 @@ struct WaterChartPowerView: View {
                     x: .value("Time", point.time),
                     y: .value("V", point.voltage)
                 )
-                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.cyan)
+                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.brown)
                 .lineStyle(StrokeStyle(lineWidth: 2))
-                .opacity(chartVisible ? 1 : 0)
                 PointMark(
                     x: .value("Time", point.time),
                     y: .value("V", point.voltage)
                 )
-                .symbol(.circle)
-                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.cyan)
-                .opacity(chartVisible ? 1 : 0)
+                .symbol(.square)
+                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.brown)
                 
                 // Thresholds
                 let highThreshold = 360.0
@@ -672,7 +415,6 @@ struct WaterChartPowerView: View {
                     .annotation(position: .top, alignment: .leading) {
                         Text("High").foregroundColor(.gray).font(.footnote)
                     }
-                    .opacity(chartVisible ? 1 : 0)
             }
             .chartXScale(domain: visibleDomain)
             .chartYAxis { AxisMarks(preset: .inset) }
@@ -687,7 +429,6 @@ struct WaterChartPowerView: View {
                 }
             }
             .chartOverlay { proxy in
-<<<<<<< Updated upstream
                 GeometryReader { geo in
                     Rectangle()
                         .fill(Color.clear)
@@ -731,24 +472,25 @@ struct WaterChartPowerView: View {
                             path.move(to: CGPoint(x: xPos, y: plotRect.minY))
                             path.addLine(to: CGPoint(x: xPos, y: plotRect.maxY))
                         }
-                        .stroke((isInSyncMode ? Color.gray : Color.cyan).opacity(0.7), style: StrokeStyle(lineWidth: 2, dash: [4,2]))
+                        .stroke(Color.brown, style: StrokeStyle(lineWidth: 2, dash: [4,2]))
                         
                         Rectangle()
-                            .fill(Color.cyan) // Keep original color even in sync mode
+                            .fill(Color.brown) // Keep original color even in sync mode
                             .frame(width: 14, height: 14)
                             .position(x: xPos, y: yPos)
                         
                         VStack(spacing: 2) {
                             Text(selected.time.formatted(date: .omitted, time: .shortened))
                                 .font(.caption2)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(.white)
                             Text("\(Int(selected.voltage)) V")
                                 .font(.caption.bold())
+                                .foregroundStyle(.white)
                         }
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(RoundedRectangle(cornerRadius: 8).fill(Color(.systemBackground).opacity(0.95)))
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.cyan, lineWidth: 1)) // Keep original color border
+                        .background(RoundedRectangle(cornerRadius: 8).fill(Color.brown))
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.brown, lineWidth: 1)) // Keep original color border
                         .position(x: xPos, y: yPos - 30)
                         .onTapGesture {
                             // Always clear just this chart's selection
@@ -784,36 +526,6 @@ struct WaterChartPowerView: View {
                         )
                     }
                 }
-=======
-                ChartLollipopOverlay(
-                    data: sampledData,
-                    color: .cyan,
-                    syncedSelection: $syncedSelection,
-                    timeExtractor: { $0.time },
-                    valueExtractor: { $0.voltage },
-                    labelExtractor: { "\(Int($0.voltage)) V" }
-                )
->>>>>>> Stashed changes
-            }
-            .animation(.easeInOut(duration: 0.45), value: chartVisible)
-            .onChange(of: timeRange) { _, _ in
-                chartVisible = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                    withAnimation(.easeInOut(duration: 0.45)) {
-                        chartVisible = true
-                    }
-                }
-            }
-            .onAppear {
-                chartVisible = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                    withAnimation(.easeInOut(duration: 0.45)) {
-                        chartVisible = true
-                    }
-                }
-            }
-            .onDisappear {
-                chartVisible = false
             }
         }
         .frame(maxWidth: .infinity)
@@ -829,7 +541,7 @@ struct WaterChartOutputView: View {
     }
     
     @State private var data: [DataPoint]
-    @State private var chartVisible: Bool = false
+    @State private var selectedDataPoint: DataPoint? = nil
     
     let domain: ClosedRange<Date>?
     @Binding var syncedSelection: Date?
@@ -885,10 +597,10 @@ struct WaterChartOutputView: View {
         
         let xAxisStride: Int = {
             switch timeRange {
-            case .thirtyMin: return 3
-            case .oneHour: return 6
-            case .twoHour: return 12
-            case .threeHour: return 18
+            case .thirtyMin: return 6
+            case .oneHour: return 12
+            case .twoHour: return 18
+            case .threeHour: return 24
             }
         }()
         
@@ -907,16 +619,14 @@ struct WaterChartOutputView: View {
                     x: .value("Time", point.time),
                     y: .value("L", point.liters)
                 )
-                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.indigo)
+                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.blue)
                 .lineStyle(StrokeStyle(lineWidth: 2))
-                .opacity(chartVisible ? 1 : 0)
                 PointMark(
                     x: .value("Time", point.time),
                     y: .value("L", point.liters)
                 )
-                .symbol(.circle)
-                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.indigo)
-                .opacity(chartVisible ? 1 : 0)
+                .symbol(.triangle)
+                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.blue)
                 
                 // Thresholds
                 let lowThreshold = 4.0
@@ -928,7 +638,6 @@ struct WaterChartOutputView: View {
                     .annotation(position: .top, alignment: .leading) {
                         Text("Low").foregroundColor(.gray).font(.footnote)
                     }
-                    .opacity(chartVisible ? 1 : 0)
             }
             .chartXScale(domain: visibleDomain)
             .chartYAxis { AxisMarks(preset: .inset) }
@@ -943,7 +652,6 @@ struct WaterChartOutputView: View {
                 }
             }
             .chartOverlay { proxy in
-<<<<<<< Updated upstream
                 GeometryReader { geo in
                     Rectangle()
                         .fill(Color.clear)
@@ -987,24 +695,25 @@ struct WaterChartOutputView: View {
                             path.move(to: CGPoint(x: xPos, y: plotRect.minY))
                             path.addLine(to: CGPoint(x: xPos, y: plotRect.maxY))
                         }
-                        .stroke((isInSyncMode ? Color.gray : Color.indigo).opacity(0.7), style: StrokeStyle(lineWidth: 2, dash: [4,2]))
+                        .stroke(Color.blue, style: StrokeStyle(lineWidth: 2, dash: [4,2]))
                         
-                        Circle()
-                            .fill(Color.indigo) // Keep original color even in sync mode
-                            .frame(width: 14, height: 14)
+                        Triangle()
+                            .fill(Color.blue) // Keep original color even in sync mode
+                            .frame(width: 18, height: 18)
                             .position(x: xPos, y: yPos)
                         
                         VStack(spacing: 2) {
                             Text(selected.time.formatted(date: .omitted, time: .shortened))
                                 .font(.caption2)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(.white)
                             Text(String(format: "%.1f L", selected.liters))
                                 .font(.caption.bold())
+                                .foregroundStyle(.white)
                         }
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(RoundedRectangle(cornerRadius: 8).fill(Color(.systemBackground).opacity(0.95)))
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.indigo, lineWidth: 1)) // Keep original color border
+                        .background(RoundedRectangle(cornerRadius: 8).fill(Color.blue))
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.blue, lineWidth: 1)) // Keep original color border
                         .position(x: xPos, y: yPos - 30)
                         .onTapGesture {
                             // Always clear just this chart's selection
@@ -1040,42 +749,24 @@ struct WaterChartOutputView: View {
                         )
                     }
                 }
-=======
-                ChartLollipopOverlay(
-                    data: sampledData,
-                    color: .indigo,
-                    syncedSelection: $syncedSelection,
-                    timeExtractor: { $0.time },
-                    valueExtractor: { $0.liters },
-                    labelExtractor: { String(format: "%.1f L", $0.liters) }
-                )
->>>>>>> Stashed changes
-            }
-            .animation(.easeInOut(duration: 0.45), value: chartVisible)
-            .onChange(of: timeRange) { _, _ in
-                chartVisible = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                    withAnimation(.easeInOut(duration: 0.45)) {
-                        chartVisible = true
-                    }
-                }
-            }
-            .onAppear {
-                chartVisible = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                    withAnimation(.easeInOut(duration: 0.45)) {
-                        chartVisible = true
-                    }
-                }
-            }
-            .onDisappear {
-                chartVisible = false
             }
         }
         .frame(maxWidth: .infinity)
     }
 }
 
+struct Triangle: Shape {
+    func path(in rect: CGRect) -> Path {
+        Path { path in
+            path.move(to: CGPoint(x: rect.midX, y: rect.minY))
+            path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
+            path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+            path.closeSubpath()
+        }
+    }
+}
+
 #Preview {
     WaterPurifierView()
 }
+
