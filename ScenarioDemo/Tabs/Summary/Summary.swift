@@ -8,18 +8,31 @@
 import SwiftUI
 
 struct SummaryView: View {
-
+    @Environment(\.colorScheme) private var colorScheme
+    
     var body: some View {
-        ScrollView(.vertical) {
-            VStack(alignment: .leading, spacing: 28) {
-                SummaryHeaderView()
-                Timeline()
-                NextEffect()
-                ActionsAndCommView()
-                Spacer()
+        
+        ZStack {
+            Group {
+                if colorScheme == .dark {
+                    MeshGradientBackground()
+                        .ignoresSafeArea()
+                        .opacity(0.3)
+                } else {
+                    Color(.systemGroupedBackground)
+                        .ignoresSafeArea()
+                }
+            }
+            ScrollView(.vertical) {
+                VStack(alignment: .leading, spacing: 28) {
+                    SummaryHeaderView()
+                    Timeline()
+                    NextEffect()
+                    ActionsAndCommView()
+                    Spacer()
+                }
             }
         }
-        .background(Color(.systemGroupedBackground))
     }
 }
 
