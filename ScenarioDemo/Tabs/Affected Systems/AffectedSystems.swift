@@ -10,6 +10,8 @@ import SwiftUI
 // MARK: - Main View
 
 struct AffectedSystemsView: View {
+    @Environment(\.colorScheme) private var colorScheme
+    
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -35,7 +37,7 @@ struct AffectedSystemsView: View {
                     }
                     .background(
                         RoundedRectangle(cornerRadius: 26, style: .continuous)
-                            .fill(Color(.systemBackground))
+                            .fill(colorScheme == .dark ? Color(.systemGray6) : Color(.systemBackground))
                     )
 
 
@@ -68,6 +70,7 @@ struct ExpandableListItem<Content: View>: View {
     let initiallyExpanded: Bool
     let content: () -> Content
     @State private var isExpanded: Bool
+    @Environment(\.colorScheme) private var colorScheme
 
     init(title: String, initiallyExpanded: Bool = false, @ViewBuilder content: @escaping () -> Content) {
         self.title = title
@@ -104,7 +107,9 @@ struct ExpandableListItem<Content: View>: View {
                     .transition(.opacity)
             }
         }
-        .background(Color(.systemBackground))
+        .background(
+            (colorScheme == .dark ? Color(.systemGray6) : Color(.systemGroupedBackground))
+        )
         .cornerRadius(26)
     }
 }

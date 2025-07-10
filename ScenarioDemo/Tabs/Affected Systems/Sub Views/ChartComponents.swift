@@ -6,6 +6,9 @@
 //
 
 import SwiftUI
+#if !os(macOS)
+import UIKit
+#endif
 
 typealias SegmentedControlBuilder = () -> AnyView
 
@@ -17,7 +20,10 @@ struct PanelView: View {
     let hintHighlight: String?
     let segmentedControl: AnyView?
     let isDataSelected: (() -> Bool)?
+    let filterEntries: [String]?
     @Binding var selectedIndices: Set<Int>
+    @State private var selectedFilterIndex: Int?
+    let onFilterSelected: ((String) -> Void)?
     
     init(
         panelTitle: String,
@@ -27,7 +33,9 @@ struct PanelView: View {
         hintHighlight: String? = nil,
         segmentedControl: AnyView? = nil,
         isDataSelected: (() -> Bool)? = nil,
-        selectedIndices: Binding<Set<Int>>
+        filterEntries: [String]? = nil,
+        selectedIndices: Binding<Set<Int>>,
+        onFilterSelected: ((String) -> Void)? = nil
     ) {
         self.panelTitle = panelTitle
         self.panelSubtitle = panelSubtitle
@@ -36,7 +44,16 @@ struct PanelView: View {
         self.hintHighlight = hintHighlight
         self.segmentedControl = segmentedControl
         self.isDataSelected = isDataSelected
+        self.filterEntries = filterEntries
         self._selectedIndices = selectedIndices
+        self.onFilterSelected = onFilterSelected
+        
+        // Set default filter selection to "Criticality" if available, else first
+        if let filterEntries = filterEntries, let idx = filterEntries.firstIndex(of: "Criticality") {
+            _selectedFilterIndex = State(initialValue: idx)
+        } else {
+            _selectedFilterIndex = State(initialValue: 0)
+        }
     }
     
     var body: some View {
@@ -44,6 +61,14 @@ struct PanelView: View {
             PanelHeaderView(title: panelTitle, subtitle: panelSubtitle)
             if let segmentedControl = segmentedControl {
                 segmentedControl
+            }
+            if let filterEntries = filterEntries {
+                FilterListView(entries: filterEntries, selectedIndex: $selectedFilterIndex)
+                    .onChange(of: selectedFilterIndex) { newIndex in
+                        if let newIndex = newIndex {
+                            onFilterSelected?(filterEntries[newIndex])
+                        }
+                    }
             }
             if isDataSelected?() ?? true {
                 PickerView(entries: pickerEntries, selectedIndices: $selectedIndices)
@@ -154,3 +179,51 @@ struct HintView: View {
         }
     }
 }
+
+/// A view that displays a list of filter entries with a checkmark for the selected item.
+struct FilterListView: View {
+    let entries: [String]
+    @Binding var selectedIndex: Int?
+    
+    @Environment(\.colorScheme) private var colorScheme
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Image(systemName: "line.3.horizontal.decrease.circle")
+                Text("Filter by:")
+            }
+            .padding(.horizontal)
+        
+            VStack(spacing: 0) {
+                ForEach(Array(entries.enumerated()), id: \.offset) { index, entry in
+                    Button(action: {
+                        selectedIndex = index
+                    }) {
+                        HStack {
+                            Text(entry)
+                            Spacer()
+                            if selectedIndex == index {
+                                Image(systemName: "checkmark")
+                                    .foregroundColor(.accentColor)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                    }
+                    .padding(.vertical, 15)
+                    .padding(.horizontal)
+                    .buttonStyle(PlainButtonStyle())
+                    if index < entries.count - 1 {
+                        Divider().padding(.leading)
+                    }
+                }
+            }
+            .background(
+                (colorScheme == .dark ? Color(.systemGray5) : Color(.systemGroupedBackground))
+            )
+            .cornerRadius(26)
+        }
+    }
+}
+
