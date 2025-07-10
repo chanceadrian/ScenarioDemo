@@ -166,41 +166,42 @@ struct ActionsAndCommView: View {
 
 struct GroundCommView: View {
     @Environment(\.colorScheme) private var colorScheme
-    @State private var secondsElapsed: Int = 0 // Starts at 0 seconds
+    @AppStorage("groundCommStartTime") private var groundCommStartTime: Double = 0
+    @State private var now: Date = Date()
     @State private var timer: Timer?
-    
+
+    private var secondsElapsed: Int {
+        Int(now.timeIntervalSince1970 - groundCommStartTime)
+    }
+
     private var minutesElapsed: Int {
         secondsElapsed / 60
     }
-    
-    private var displaySeconds: Int {
-        secondsElapsed % 60
-    }
-    
+
     private var minutesUntilArrival: Int {
-        max(0, 19 - minutesElapsed) // Starts at 19m, counts down
+        max(0, 19 - minutesElapsed)
     }
-    
+
     private var minutesUntilGroundResponse: Int {
-        max(0, 38 - minutesElapsed) // Starts at 38m, counts down
+        max(0, 38 - minutesElapsed)
     }
-    
+
     private var progressPercentage: Double {
         if minutesElapsed <= 19 {
-            return Double(secondsElapsed) / (19.0 * 60.0) // Fill from 0% to 100% in first 19 minutes
+            return Double(secondsElapsed) / (19.0 * 60.0)
         } else {
-            return max(0.0, 1.0 - Double(secondsElapsed - (19 * 60)) / (19.0 * 60.0)) // Empty from 100% to 0% in next 19 minutes
+            return max(0.0, 1.0 - Double(secondsElapsed - (19 * 60)) / (19.0 * 60.0))
         }
     }
-    
+
     private var progressColor: Color {
         if minutesElapsed <= 19 {
-            return Color(.label) // Black/white (system default)
+            return Color(.label)
         } else {
-            return Color(.systemBlue) // Blue for return journey
+            return Color(.systemBlue)
         }
     }
-    
+
     var body: some View {
         VStack(spacing: 8) {
             HStack {
@@ -213,31 +214,32 @@ struct GroundCommView: View {
                     .fontWeight(.medium)
                     .animation(.easeInOut, value: minutesUntilGroundResponse)
             }
+
             HStack {
                 Image(systemName: "bolt.fill")
                     .font(.title)
+
                 ZStack(alignment: .leading) {
                     RoundedRectangle(cornerRadius: 100)
                         .frame(height: 7)
                         .foregroundColor(Color(.tertiarySystemFill))
-                    
-                    // Progress bar
+
                     GeometryReader { geometry in
                         RoundedRectangle(cornerRadius: 100)
                             .frame(width: geometry.size.width * progressPercentage, height: 7)
                             .foregroundColor(progressColor)
                             .animation(.easeInOut(duration: 1.0), value: progressPercentage)
-                            .animation(.easeInOut(duration: 0.5), value: progressColor)
                     }
                     .frame(height: 7)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Color(.tertiarySystemFill))
                 .cornerRadius(100)
-                
+
                 Image(systemName: "globe.americas.fill")
                     .font(.title)
             }
+
             HStack {
                 if minutesElapsed == 0 {
                     Text("Sent now")
@@ -249,7 +251,9 @@ struct GroundCommView: View {
                         .foregroundStyle(.secondary)
                         .animation(.easeInOut, value: minutesElapsed)
                 }
+
                 Spacer()
+
                 if minutesUntilArrival > 0 {
                     Text("Arrives in \(minutesUntilArrival)m")
                         .font(.footnote)
@@ -258,7 +262,7 @@ struct GroundCommView: View {
                 } else {
                     Text("Arrived")
                         .font(.footnote)
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color.green)
                         .fontWeight(.medium)
                 }
             }
@@ -269,26 +273,31 @@ struct GroundCommView: View {
         )
         .cornerRadius(26)
         .onAppear {
+            if groundCommStartTime == 0 {
+                groundCommStartTime = Date().timeIntervalSince1970
+            }
             startTimer()
         }
         .onDisappear {
             stopTimer()
         }
     }
-    
+
     private func startTimer() {
         timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
             withAnimation(.easeInOut) {
-                secondsElapsed += 1
+                now = Date()
             }
         }
     }
-    
+
     private func stopTimer() {
         timer?.invalidate()
         timer = nil
     }
 }
+
+
 
 struct GroundCommHistoryView: View {
     var groundCommDays: [GroundCommDay]

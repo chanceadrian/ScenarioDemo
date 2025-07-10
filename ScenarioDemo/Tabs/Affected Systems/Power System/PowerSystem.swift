@@ -1,4 +1,4 @@
-//
+
 //  PowerSystem.swift
 //  ScenarioDemo
 //
@@ -20,28 +20,46 @@ func dateString(daysAgo: Int, hour: Int = 9, minute: Int = 0) -> String {
 
 struct PowerSystemView: View {
     @Environment(\.colorScheme) private var colorScheme
-    @State private var selectedIndices: Set<Int> = [0, 1, 2] // All buses selected by default
-    @State private var schematicSelection: Int = 0 // Default to schematic tab
-    
+    @AppStorage("bus3OverloadTimer") private var overloadStartDate: Double = 0
+    @State private var now: Date = Date()
+    @State private var selectedIndices: Set<Int> = [0, 1, 2]
+    @State private var schematicSelection: Int = 0
+
+    private let overloadDuration: TimeInterval = 52 * 60
+
+    private var overloadCountdownString: String {
+        let startDate: Date
+        if overloadStartDate == 0 {
+            let now = Date()
+            overloadStartDate = now.timeIntervalSince1970
+            startDate = now
+        } else {
+            startDate = Date(timeIntervalSince1970: overloadStartDate)
+        }
+
+        let remaining = max(0, overloadDuration - now.timeIntervalSince(startDate))
+        let minutes = Int(remaining) / 60
+        let unit = minutes == 1 ? "minute" : "minutes"
+        return "\(minutes) \(unit)."
+    }
+
     var body: some View {
-        
         HStack(alignment: .top, spacing: 32) {
             PanelView(
                 panelTitle: "Power System",
-                panelSubtitle: "At 4:57 PM, the system diverted transit-critical loads from Bus 2 to Bus 3 due to power shortfall.",
+                panelSubtitle: "At 4:57PM, transit-critical components were diverted from Bus 2 to Bus 3 after Bus 2 exceeded its power capacity.",
                 pickerEntries: schematicSelection == 1 ? [
                     PickerEntry(color: .indigo, name: "Bus 1", unit: "Voltage", sfSymbol: "circle.fill"),
                     PickerEntry(color: .mint, name: "Bus 2", unit: "Voltage", sfSymbol: "square.fill"),
                     PickerEntry(color: .cyan, name: "Bus 3", unit: "Voltage", sfSymbol: "triangle.fill"),
                 ] : [],
                 hintMessage: "If Bus 2 Power is not restored, Bus 3 expected to exceed safe limits in ",
-                hintHighlight: "52 minutes.",
+                hintHighlight: overloadCountdownString,
                 segmentedControl: AnyView(DataLogSwitcher(selection: $schematicSelection)),
                 isDataSelected: { schematicSelection == 1 },
                 selectedIndices: schematicSelection == 1 ? $selectedIndices : Binding.constant([])
             )
-            
-            // Show image, chart, or logs based on toggle (schematicSelection)
+
             Group {
                 if schematicSelection == 0 {
                     Image(colorScheme == .dark ? "verticalDark" : "verticalLight")
@@ -64,7 +82,11 @@ struct PowerSystemView: View {
             Color(colorScheme == .dark ? .systemGray6 : .systemBackground)
         )
         .frame(height: 640)
-        
+        .task {
+            Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+                now = Date()
+            }
+        }
     }
 }
 

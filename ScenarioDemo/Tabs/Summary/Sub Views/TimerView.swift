@@ -8,17 +8,41 @@
 import SwiftUI
 
 struct TimerView: View {
-    let timeRemaining: TimeInterval
-    private let originalDuration: TimeInterval = 52 * 60 // 52 minutes in seconds
+    @State private var now: Date = Date()
+    private let timerKey: String
+    private let originalDuration: TimeInterval
     
+    @AppStorage var timerStartDate: Double
+
+    init(timerKey: String = "defaultTimer", duration: TimeInterval = 52 * 60) {
+        self.timerKey = timerKey
+        self.originalDuration = duration
+        self._timerStartDate = AppStorage(wrappedValue: 0, timerKey)
+    }
+    
+    private var timeRemaining: TimeInterval {
+        let startDate: Date
+        if timerStartDate == 0 {
+            let now = Date()
+            timerStartDate = now.timeIntervalSince1970
+            startDate = now
+        } else {
+            startDate = Date(timeIntervalSince1970: timerStartDate)
+        }
+        return max(0, originalDuration - now.timeIntervalSince(startDate))
+    }
+
+    private var progressValue: CGFloat {
+        let progress = max(0, timeRemaining / originalDuration)
+        return CGFloat(progress)
+    }
+
     var body: some View {
         ZStack {
-            // Background circle
             Circle()
                 .stroke(Color.secondary.opacity(0.3), lineWidth: 5)
                 .frame(width: 100, height: 100)
             
-            // Progress circle
             Circle()
                 .trim(from: 0, to: progressValue)
                 .stroke(
@@ -29,7 +53,6 @@ struct TimerView: View {
                 .rotationEffect(.degrees(-90))
                 .animation(.easeInOut(duration: 0.5), value: progressValue)
             
-            // Timer text
             VStack(spacing: 0) {
                 HStack(alignment: .firstTextBaseline, spacing: 1) {
                     Text(formatTimeNumber(timeRemaining))
@@ -50,30 +73,28 @@ struct TimerView: View {
             }
             .padding(.top, 8)
         }
+        .task {
+            startTimer()
+        }
     }
-    
-    private var progressValue: CGFloat {
-        let progress = max(0, timeRemaining / originalDuration)
-        return CGFloat(progress)
+
+    // MARK: - Timer Logic
+
+    private func startTimer() {
+        Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+            now = Date()
+        }
     }
-    
+
+    // MARK: - Formatting Helpers
+
     private func formatTimeNumber(_ seconds: TimeInterval) -> String {
         let totalSeconds = Int(seconds)
-        
-        if totalSeconds <= 0 {
-            return "00"
-        }
-        
+        if totalSeconds <= 0 { return "00" }
         let minutes = totalSeconds / 60
-        
         if minutes >= 60 {
             let hours = minutes / 60
-            if hours >= 24 {
-                let days = hours / 24
-                return "\(days)"
-            } else {
-                return "\(hours)"
-            }
+            return hours >= 24 ? "\(hours / 24)" : "\(hours)"
         } else {
             return "\(minutes)"
         }
@@ -81,20 +102,11 @@ struct TimerView: View {
     
     private func formatTimeUnit(_ seconds: TimeInterval) -> String {
         let totalSeconds = Int(seconds)
-        
-        if totalSeconds <= 0 {
-            return "expired"
-        }
-        
+        if totalSeconds <= 0 { return "expired" }
         let minutes = totalSeconds / 60
-        
         if minutes >= 60 {
             let hours = minutes / 60
-            if hours >= 24 {
-                return "days"
-            } else {
-                return "hrs"
-            }
+            return hours >= 24 ? "days" : "hrs"
         } else {
             return "min"
         }
@@ -105,8 +117,4 @@ struct TimerView: View {
         let secs = totalSeconds % 60
         return String(format: "%02d", secs)
     }
-}
-
-#Preview {
-    TimerView(timeRemaining: 3120)
 }

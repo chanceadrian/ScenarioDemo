@@ -9,22 +9,22 @@ import SwiftUI
 
 struct SummaryHeaderView: View {
 
+    @State private var timer: Timer? = nil
+    @State private var endDate: Date = Date().addingTimeInterval(52 * 60)
+    @State private var tick = 0
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Power System Critical Failure")
-                    .font(.largeTitle)
+        VStack(spacing: 16) {
+            TimerView(timerKey: "bus3OverloadTimer", duration: 52 * 60)
+            VStack(spacing: 8) {
+                Text("Power System Failure")
+                    .font(.title)
                     .fontWeight(.semibold)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Recover Power Bus 2")
-                        .font(.title)
-                        .fontWeight(.semibold)
-                    Text("• 52 minutes until Bus-3 overload.\n• Bus-2 voltage critically low (95 V);\n• Essential systems rerouted to Bus-3 to maintain transit-phase operations.")
-                        .font(.body)
-                }
+                Text("\(max(0, Int(endDate.timeIntervalSince(Date()) / 60))) minutes until Bus-3 overload, followed by loss of power supply to components and attitude control.")
+                    .font(.title3)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 502)
             }
-            .frame(maxWidth: 680, alignment: .leading)
-            
             HStack(spacing: 40) {
                 HStack {
                     Image(systemName: "person.slash.fill")
@@ -32,7 +32,7 @@ struct SummaryHeaderView: View {
                     VStack(alignment: .leading) {
                        Text("Ground Assistance")
                             .fontWeight(.medium)
-                       Text("None by Next Affect")
+                       Text("None by This Effect")
                     }
                     .font(.footnote)
                 }
@@ -50,7 +50,17 @@ struct SummaryHeaderView: View {
             }
         }
         .padding(.horizontal)
-        .padding(.horizontal, 4)
+        .onAppear {
+            endDate = Date().addingTimeInterval(52 * 60)
+            timer?.invalidate()
+            timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+                tick += 1
+            }
+        }
+        .onDisappear {
+            timer?.invalidate()
+            timer = nil
+        }
     }
 }
 

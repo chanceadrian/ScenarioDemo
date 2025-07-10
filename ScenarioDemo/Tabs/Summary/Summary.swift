@@ -24,13 +24,22 @@ struct SummaryView: View {
                 }
             }
             ScrollView(.vertical) {
-                VStack(alignment: .leading, spacing: 28) {
-                    SummaryHeaderView()
-                    Timeline()
+                VStack(spacing: 28) {
+                    VStack(spacing: 12) {
+                        SummaryHeaderView()
+                        Timeline()
+                    }
                     NextEffect()
                     ActionsAndCommView()
+                    Button("Reset Scenario") {
+                        UserDefaults.standard.removeObject(forKey: "bus3OverloadTimer")
+                        UserDefaults.standard.removeObject(forKey: "timelineAnchorTime")
+                        UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "groundCommStartTime")
+                    }
+
                     Spacer()
                 }
+                .padding(.vertical)
             }
         }
     }

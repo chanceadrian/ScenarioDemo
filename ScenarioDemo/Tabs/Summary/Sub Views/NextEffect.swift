@@ -21,7 +21,6 @@ struct NextEffect: View {
     }
 
     private let entries: [Entry] = [
-        .init(initialTime: 52 * 60, message: "Power Bus 3 overload, followed by a loss of power supply to transit phase components and attitude control."), // 52:00
         .init(initialTime: 6 * 60 * 60, message: "Power Bus 2 circuit reset due to prolonged high usage."), // 6 hours
         .init(initialTime: 7 * 24 * 60 * 60, message: "Water supply low due to low output from water purifier.") // 7 days
     ]
@@ -66,14 +65,10 @@ struct NextEffect: View {
 
         switch index {
         case 0:
-            // Show minutes for first entry
-            let minutes = Int(remaining) / 60
-            return "in \(minutes)m"
-        case 1:
             // Show hours (~rounded down)
             let hours = Int(remaining) / 3600
             return "in \(hours) hours"
-        case 2:
+        case 1:
             // Show days (~rounded down)
             let days = Int(remaining) / (24 * 3600)
             return "in \(days) days"
@@ -84,7 +79,7 @@ struct NextEffect: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Next Effects")
+            Text("Later Effects")
                 .font(.title2)
                 .fontWeight(.semibold)
                 .padding(.horizontal)
@@ -94,42 +89,16 @@ struct NextEffect: View {
                 HStack(spacing: 2) {
                     ForEach(Array(entries.enumerated()), id: \.element.id) { idx, entry in
                         VStack(alignment: .leading, spacing: 4) {
-                            if idx == 0 {
-                                Group {
-                                    HStack {
-                                        TimerView(timeRemaining: timeRemaining(for: idx))
-                                            .padding(.trailing, 8)
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            HStack(spacing: 4) {
-                                                Image(systemName: "timer")
-                                                    .font(.footnote)
-                                                    .foregroundColor(.orange)
-                                                    .fontWeight(.semibold)
-                                                Text(formatTimeString(timeRemaining(for: idx)))
-                                                    .font(.footnote)
-                                                    .foregroundColor(.orange)
-                                                    .fontWeight(.semibold)
-                                            }
-                                            Text(entry.message)
-                                                .font(.subheadline)
-                                                .foregroundColor(.primary)
-                                        }
-                                    }
-                                }
-                                .id(tick)
-                            } else {
-                                Text(formatTimeForEntry(idx))
-                                    .font(.footnote)
-                                    .foregroundColor(.secondary)
-                                    .fontWeight(.semibold)
-                                Text(entry.message)
-                                    .font(.subheadline)
-                            }
-
+                            Text(formatTimeForEntry(idx))
+                                .font(.footnote)
+                                .foregroundColor(.secondary)
+                                .fontWeight(.semibold)
+                            Text(entry.message)
+                                .font(.subheadline)
                             Spacer()
                         }
                         .padding()
-                        .frame(width: idx == 0 ? 440 : 330, alignment: .leading)
+                        .frame(width: 330, alignment: .leading)
                         .background(
                             Color(colorScheme == .dark ? .systemGray6 : .systemBackground)
                         )
@@ -174,3 +143,4 @@ struct NextEffect: View {
 #Preview {
     ContentView()
 }
+

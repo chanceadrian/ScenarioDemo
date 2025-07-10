@@ -251,20 +251,19 @@ struct PowerSystemChartView: View {
                         if !valueTexts.isEmpty {
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(selectedTime.formatted(date: .omitted, time: .shortened))
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
+                                    .font(.caption)
                                 ForEach(valueTexts, id: \.0) { bus, pt in
                                     HStack(spacing: 6) {
                                         Image(systemName: sfSymbolName(for: bus))
                                             .font(.caption2)
                                             .foregroundColor(busColor(bus))
-                                        Text("Bus \(bus): \(String(format: "%.1f", pt.voltage)) W")
+                                        Text("Bus \(bus), \(String(format: "%.1f", pt.voltage)) W")
                                             .font(.caption)
                                     }
                                 }
                             }
                             .padding(8)
-                            .background(RoundedRectangle(cornerRadius: 8).fill(Color(.systemBackground).opacity(0.95)))
+                            .background(RoundedRectangle(cornerRadius: 8).fill(Color(.systemBackground)))
                             .overlay(
                                 RoundedRectangle(cornerRadius: 8)
                                     .stroke(Color.primary, lineWidth: 1)

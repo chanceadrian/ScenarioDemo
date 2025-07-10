@@ -166,7 +166,7 @@ struct WaterChartSpeedView: View {
         
         VStack(alignment: .leading) {
             HStack {
-                Text("Water Purifier Impeller Speed")
+                Text("Water Purifier Speed")
                     .font(.headline)
                 Spacer()
                 Text("RPM")
