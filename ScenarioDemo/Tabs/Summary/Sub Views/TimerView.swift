@@ -9,9 +9,8 @@
 import SwiftUI
 
 struct TimerView: View {
+    let timeRemaining: TimeInterval
     private let originalDuration: TimeInterval = 3120 // 52 minutes
-    @State private var timeRemaining: TimeInterval = 3120
-    @State private var timer: Timer? = nil
     
     var body: some View {
         ZStack {
@@ -51,20 +50,6 @@ struct TimerView: View {
                 }
             }
             .padding(.top, 8)
-        }
-        .onAppear {
-            timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
-                if timeRemaining > 0 {
-                    timeRemaining -= 1
-                } else {
-                    timer?.invalidate()
-                    timer = nil
-                }
-            }
-        }
-        .onDisappear {
-            timer?.invalidate()
-            timer = nil
         }
     }
     
@@ -150,5 +135,5 @@ struct TimerView: View {
 }
 
 #Preview {
-    TimerView()
+    TimerView(timeRemaining: 3120)
 }
