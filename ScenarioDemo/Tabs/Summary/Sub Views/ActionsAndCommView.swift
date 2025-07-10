@@ -22,7 +22,7 @@ func generateGroundCommHistory(referenceDate: Date = Date(), numberOfDays: Int =
     let calendar = Calendar.current
     var days: [GroundCommDay] = []
     let messages = [
-        "Reminder: Solar array alignment sweep scheduled for 1900 UTC. Verify Panel 3 tracking before thermal drift exceeds tolerance. Also, today’s meal packs include the revised citrus-protein bar. Please log any texture issues.",
+        "Reminder: Solar array alignment sweep scheduled for 1900 UTC. Verify Panel 3 tracking before thermal drift exceeds tolerance. Also, today's meal packs include the revised citrus-protein bar. Please log any texture issues.",
         "Telemetry indicates elevated vibration on coolant pump 2. Please monitor and report any pressure spikes.",
         "Update: EVA suit 4 battery replaced. All life support systems nominal.",
         "Notice: Experiment Bay 3 will be offline for calibration at 1400 UTC.",
@@ -108,7 +108,7 @@ struct ActionsAndCommView: View {
                     HStack {
                         VStack(alignment: .leading) {
                             Text("Most Recent Ground Communication")
-                            Text("Reminder: Solar array alignment sweep scheduled for 1900 UTC. Verify Panel 3 tracking before thermal drift exceeds tolerance. Also, today’s meal packs include the revised citrus-protein bar. Please log any texture issues.")
+                            Text("Reminder: Solar array alignment sweep scheduled for 1900 UTC. Verify Panel 3 tracking before thermal drift exceeds tolerance. Also, today's meal packs include the revised citrus-protein bar. Please log any texture issues.")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
@@ -166,6 +166,40 @@ struct ActionsAndCommView: View {
 
 struct GroundCommView: View {
     @Environment(\.colorScheme) private var colorScheme
+    @State private var secondsElapsed: Int = 0 // Starts at 0 seconds
+    @State private var timer: Timer?
+    
+    private var minutesElapsed: Int {
+        secondsElapsed / 60
+    }
+    
+    private var displaySeconds: Int {
+        secondsElapsed % 60
+    }
+    
+    private var minutesUntilArrival: Int {
+        max(0, 19 - minutesElapsed) // Starts at 19m, counts down
+    }
+    
+    private var minutesUntilGroundResponse: Int {
+        max(0, 38 - minutesElapsed) // Starts at 38m, counts down
+    }
+    
+    private var progressPercentage: Double {
+        if minutesElapsed <= 19 {
+            return Double(secondsElapsed) / (19.0 * 60.0) // Fill from 0% to 100% in first 19 minutes
+        } else {
+            return max(0.0, 1.0 - Double(secondsElapsed - (19 * 60)) / (19.0 * 60.0)) // Empty from 100% to 0% in next 19 minutes
+        }
+    }
+    
+    private var progressColor: Color {
+        if minutesElapsed <= 19 {
+            return Color(.label) // Black/white (system default)
+        } else {
+            return Color(.systemBlue) // Blue for return journey
+        }
+    }
     
     var body: some View {
         VStack(spacing: 8) {
@@ -174,17 +208,28 @@ struct GroundCommView: View {
                     .font(.subheadline)
                     .fontWeight(.medium)
                 Spacer()
-                Text("Earliest Ground Response in 37m")
+                Text("Earliest Ground Response in \(minutesUntilGroundResponse)m")
                     .font(.subheadline)
                     .fontWeight(.medium)
+                    .animation(.easeInOut, value: minutesUntilGroundResponse)
             }
             HStack {
                 Image(systemName: "bolt.fill")
                     .font(.title)
                 ZStack(alignment: .leading) {
                     RoundedRectangle(cornerRadius: 100)
-                        .frame(width: 60, height: 7, alignment: .leading)
-                        .background(Color(.systemBackground))
+                        .frame(height: 7)
+                        .foregroundColor(Color(.tertiarySystemFill))
+                    
+                    // Progress bar
+                    GeometryReader { geometry in
+                        RoundedRectangle(cornerRadius: 100)
+                            .frame(width: geometry.size.width * progressPercentage, height: 7)
+                            .foregroundColor(progressColor)
+                            .animation(.easeInOut(duration: 1.0), value: progressPercentage)
+                            .animation(.easeInOut(duration: 0.5), value: progressColor)
+                    }
+                    .frame(height: 7)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Color(.tertiarySystemFill))
@@ -194,13 +239,28 @@ struct GroundCommView: View {
                     .font(.title)
             }
             HStack {
-                Text("Sent 2m ago")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                if minutesElapsed == 0 {
+                    Text("Sent now")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("Sent \(minutesElapsed)m ago")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .animation(.easeInOut, value: minutesElapsed)
+                }
                 Spacer()
-                Text("Arrives in 17m")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                if minutesUntilArrival > 0 {
+                    Text("Arrives in \(minutesUntilArrival)m")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .animation(.easeInOut, value: minutesUntilArrival)
+                } else {
+                    Text("Arrived")
+                        .font(.footnote)
+                        .foregroundStyle(.green)
+                        .fontWeight(.medium)
+                }
             }
         }
         .padding(20)
@@ -208,6 +268,25 @@ struct GroundCommView: View {
             Color(colorScheme == .dark ? .systemGray6 : .systemBackground)
         )
         .cornerRadius(26)
+        .onAppear {
+            startTimer()
+        }
+        .onDisappear {
+            stopTimer()
+        }
+    }
+    
+    private func startTimer() {
+        timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
+            withAnimation(.easeInOut) {
+                secondsElapsed += 1
+            }
+        }
+    }
+    
+    private func stopTimer() {
+        timer?.invalidate()
+        timer = nil
     }
 }
 
@@ -253,4 +332,3 @@ struct GroundCommHistoryView: View {
 #Preview {
     ActionsAndCommView()
 }
-

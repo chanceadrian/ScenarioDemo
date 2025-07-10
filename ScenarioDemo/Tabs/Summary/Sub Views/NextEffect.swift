@@ -9,8 +9,10 @@ import SwiftUI
 
 struct NextEffect: View {
     @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.scenePhase) private var scenePhase
     @State private var timer: Timer?
     @State private var tick = 0
+    @State private var appLaunchTime = Date()
 
     struct Entry: Identifiable {
         let id = UUID()
@@ -19,25 +21,31 @@ struct NextEffect: View {
     }
 
     private let entries: [Entry] = [
-        .init(initialTime: 52 * 60, message: "Power Bus 3 overload, followed by a loss of power supply to  transit phase components and attitude control."), // 52:00
+        .init(initialTime: 52 * 60, message: "Power Bus 3 overload, followed by a loss of power supply to transit phase components and attitude control."), // 52:00
         .init(initialTime: 6 * 60 * 60, message: "Power Bus 2 circuit reset due to prolonged high usage."), // 6 hours
         .init(initialTime: 7 * 24 * 60 * 60, message: "Water supply low due to low output from water purifier.") // 7 days
     ]
 
-    private func endDate(for index: Int) -> Date {
-        let key = "NextEffectEndDate_\(index)"
-        let defaults = UserDefaults.standard
-        if let storedDate = defaults.object(forKey: key) as? Date {
-            return storedDate
-        } else {
-            let newDate = Date().addingTimeInterval(entries[index].initialTime)
-            defaults.set(newDate, forKey: key)
-            return newDate
+    private func sessionKey() -> String {
+        return "NextEffectSessionStart"
+    }
+
+    @State private var endDates: [Date] = []
+    
+    private func initializeEndDates() {
+        // Always reset to full duration on app launch
+        let now = Date()
+        endDates = []
+        
+        for i in 0..<entries.count {
+            let newEndDate = now.addingTimeInterval(entries[i].initialTime)
+            endDates.append(newEndDate)
         }
     }
 
     private func timeRemaining(for index: Int) -> TimeInterval {
-        let remaining = endDate(for: index).timeIntervalSince(Date())
+        guard index < endDates.count else { return 0 }
+        let remaining = endDates[index].timeIntervalSince(Date())
         return max(remaining, 0)
     }
 
@@ -134,11 +142,20 @@ struct NextEffect: View {
         .padding(.vertical, 4)
         .background(Color(.systemGroupedBackground))
         .onAppear {
+            initializeEndDates()
             startTimer()
         }
         .onDisappear {
             timer?.invalidate()
             timer = nil
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                startTimer()
+            } else if newPhase == .background {
+                timer?.invalidate()
+                timer = nil
+            }
         }
     }
 

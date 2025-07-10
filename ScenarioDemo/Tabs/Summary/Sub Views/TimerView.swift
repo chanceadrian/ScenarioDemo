@@ -1,5 +1,4 @@
 //
-//
 //  TimerView.swift
 //  ScenarioDemo
 //
@@ -10,7 +9,7 @@ import SwiftUI
 
 struct TimerView: View {
     let timeRemaining: TimeInterval
-    private let originalDuration: TimeInterval = 3120 // 52 minutes
+    private let originalDuration: TimeInterval = 52 * 60 // 52 minutes in seconds
     
     var body: some View {
         ZStack {
@@ -36,7 +35,7 @@ struct TimerView: View {
                     Text(formatTimeNumber(timeRemaining))
                         .font(.title.weight(.semibold))
                         .foregroundColor(.primary)
-                    Text("min")
+                    Text(formatTimeUnit(timeRemaining))
                         .font(.title3.weight(.semibold))
                         .foregroundColor(.secondary)
                 }
@@ -66,7 +65,6 @@ struct TimerView: View {
         }
         
         let minutes = totalSeconds / 60
-        let secs = totalSeconds % 60
         
         if minutes >= 60 {
             let hours = minutes / 60
@@ -81,12 +79,6 @@ struct TimerView: View {
         }
     }
     
-    private func formatTimeSeconds(_ seconds: TimeInterval) -> String {
-        let totalSeconds = Int(seconds)
-        let secs = totalSeconds % 60
-        return String(format: "%02d", secs)
-    }
-    
     private func formatTimeUnit(_ seconds: TimeInterval) -> String {
         let totalSeconds = Int(seconds)
         
@@ -95,7 +87,6 @@ struct TimerView: View {
         }
         
         let minutes = totalSeconds / 60
-        let secs = totalSeconds % 60
         
         if minutes >= 60 {
             let hours = minutes / 60
@@ -105,32 +96,14 @@ struct TimerView: View {
                 return "hrs"
             }
         } else {
-            return "min\n\(String(format: "%02d", secs))sec"
+            return "min"
         }
     }
     
-    private func formatTime(_ seconds: TimeInterval) -> String {
+    private func formatTimeSeconds(_ seconds: TimeInterval) -> String {
         let totalSeconds = Int(seconds)
-        
-        if totalSeconds <= 0 {
-            return "00:00"
-        }
-        
-        let minutes = totalSeconds / 60
         let secs = totalSeconds % 60
-        
-        if minutes >= 60 {
-            let hours = minutes / 60
-            let remainingMinutes = minutes % 60
-            if hours >= 24 {
-                let days = hours / 24
-                return "\(days)d"
-            } else {
-                return "\(hours)h"
-            }
-        } else {
-            return String(format: "%02d:%02d", minutes, secs)
-        }
+        return String(format: "%02d", secs)
     }
 }
 
