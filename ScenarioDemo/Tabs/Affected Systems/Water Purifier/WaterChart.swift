@@ -252,7 +252,7 @@ struct WaterChartSpeedView: View {
                         .stroke((isInSyncMode ? Color.gray : Color.mint).opacity(0.7), style: StrokeStyle(lineWidth: 2, dash: [4,2]))
                         
                         Circle()
-                            .fill(isInSyncMode ? Color.gray : Color.mint)
+                            .fill(Color.mint) // Keep original color even in sync mode
                             .frame(width: 14, height: 14)
                             .position(x: xPos, y: yPos)
                         
@@ -266,16 +266,11 @@ struct WaterChartSpeedView: View {
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .background(RoundedRectangle(cornerRadius: 8).fill(Color(.systemBackground).opacity(0.95)))
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(isInSyncMode ? Color.gray : Color.mint, lineWidth: 1))
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.mint, lineWidth: 1)) // Keep original color border
                         .position(x: xPos, y: yPos - 30)
                         .onTapGesture {
-                            if isInSyncMode {
-                                // Exit sync mode
-                                syncedSelection = nil
-                            } else {
-                                // Clear local selection
-                                selectedDataPoint = nil
-                            }
+                            // Always clear just this chart's selection
+                            selectedDataPoint = nil
                         }
                         .gesture(
                             LongPressGesture(minimumDuration: 0.15)
@@ -503,7 +498,7 @@ struct WaterChartPowerView: View {
                         .stroke((isInSyncMode ? Color.gray : Color.cyan).opacity(0.7), style: StrokeStyle(lineWidth: 2, dash: [4,2]))
                         
                         Rectangle()
-                            .fill(isInSyncMode ? Color.gray : Color.cyan)
+                            .fill(Color.cyan) // Keep original color even in sync mode
                             .frame(width: 14, height: 14)
                             .position(x: xPos, y: yPos)
                         
@@ -517,16 +512,11 @@ struct WaterChartPowerView: View {
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .background(RoundedRectangle(cornerRadius: 8).fill(Color(.systemBackground).opacity(0.95)))
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(isInSyncMode ? Color.gray : Color.cyan, lineWidth: 1))
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.cyan, lineWidth: 1)) // Keep original color border
                         .position(x: xPos, y: yPos - 30)
                         .onTapGesture {
-                            if isInSyncMode {
-                                // Exit sync mode
-                                syncedSelection = nil
-                            } else {
-                                // Clear local selection
-                                selectedDataPoint = nil
-                            }
+                            // Always clear just this chart's selection
+                            selectedDataPoint = nil
                         }
                         .gesture(
                             LongPressGesture(minimumDuration: 0.15)
@@ -754,7 +744,7 @@ struct WaterChartOutputView: View {
                         .stroke((isInSyncMode ? Color.gray : Color.indigo).opacity(0.7), style: StrokeStyle(lineWidth: 2, dash: [4,2]))
                         
                         Circle()
-                            .fill(isInSyncMode ? Color.gray : Color.indigo)
+                            .fill(Color.indigo) // Keep original color even in sync mode
                             .frame(width: 14, height: 14)
                             .position(x: xPos, y: yPos)
                         
@@ -768,16 +758,11 @@ struct WaterChartOutputView: View {
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .background(RoundedRectangle(cornerRadius: 8).fill(Color(.systemBackground).opacity(0.95)))
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(isInSyncMode ? Color.gray : Color.indigo, lineWidth: 1))
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.indigo, lineWidth: 1)) // Keep original color border
                         .position(x: xPos, y: yPos - 30)
                         .onTapGesture {
-                            if isInSyncMode {
-                                // Exit sync mode
-                                syncedSelection = nil
-                            } else {
-                                // Clear local selection
-                                selectedDataPoint = nil
-                            }
+                            // Always clear just this chart's selection
+                            selectedDataPoint = nil
                         }
                         .gesture(
                             LongPressGesture(minimumDuration: 0.15)
