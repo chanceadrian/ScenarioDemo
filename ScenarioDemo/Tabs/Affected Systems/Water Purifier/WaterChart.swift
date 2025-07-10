@@ -95,6 +95,7 @@ struct WaterChartSpeedView: View {
     @State private var data: [DataPoint]
     @State private var selectedDataPoint: DataPoint? = nil
     @State private var lollipopVisible: Bool = true
+    @State private var previousSelectedDataPoint: DataPoint? = nil
     
     @Binding var syncedSelection: Date?
     
@@ -217,6 +218,10 @@ struct WaterChartSpeedView: View {
                                 if let closest = sampledData.min(by: {
                                     abs($0.time.timeIntervalSince(date)) < abs($1.time.timeIntervalSince(date))
                                 }) {
+                                    // Store previous selection before updating
+                                    if selectedDataPoint == nil {
+                                        previousSelectedDataPoint = nil
+                                    }
                                     selectedDataPoint = closest
                                     lollipopVisible = true
                                 }
@@ -227,7 +232,8 @@ struct WaterChartSpeedView: View {
                         .onChanged { value in
                             switch value {
                             case .first(true):
-                                // long press began, no drag yet
+                                // Store current selection before sync mode
+                                previousSelectedDataPoint = selectedDataPoint
                                 break
                             case .second(true, let drag?):
                                 if let date: Date = proxy.value(atX: drag.location.x) {
@@ -240,6 +246,9 @@ struct WaterChartSpeedView: View {
                         }
                         .onEnded { _ in
                             syncedSelection = nil
+                            // Restore previous selection after sync ends
+                            selectedDataPoint = previousSelectedDataPoint
+                            lollipopVisible = previousSelectedDataPoint != nil
                         }
                     
                     Rectangle()
@@ -317,6 +326,7 @@ struct WaterChartPowerView: View {
     @State private var data: [DataPoint]
     @State private var selectedDataPoint: DataPoint? = nil
     @State private var lollipopVisible: Bool = true
+    @State private var previousSelectedDataPoint: DataPoint? = nil
     
     @Binding var syncedSelection: Date?
     
@@ -439,6 +449,10 @@ struct WaterChartPowerView: View {
                                 if let closest = sampledData.min(by: {
                                     abs($0.time.timeIntervalSince(date)) < abs($1.time.timeIntervalSince(date))
                                 }) {
+                                    // Store previous selection before updating
+                                    if selectedDataPoint == nil {
+                                        previousSelectedDataPoint = nil
+                                    }
                                     selectedDataPoint = closest
                                     lollipopVisible = true
                                 }
@@ -449,7 +463,8 @@ struct WaterChartPowerView: View {
                         .onChanged { value in
                             switch value {
                             case .first(true):
-                                // long press began, no drag yet
+                                // Store current selection before sync mode
+                                previousSelectedDataPoint = selectedDataPoint
                                 break
                             case .second(true, let drag?):
                                 if let date: Date = proxy.value(atX: drag.location.x) {
@@ -462,6 +477,9 @@ struct WaterChartPowerView: View {
                         }
                         .onEnded { _ in
                             syncedSelection = nil
+                            // Restore previous selection after sync ends
+                            selectedDataPoint = previousSelectedDataPoint
+                            lollipopVisible = previousSelectedDataPoint != nil
                         }
                     
                     Rectangle()
@@ -539,6 +557,7 @@ struct WaterChartOutputView: View {
     @State private var data: [DataPoint]
     @State private var selectedDataPoint: DataPoint? = nil
     @State private var lollipopVisible: Bool = true
+    @State private var previousSelectedDataPoint: DataPoint? = nil
     
     @Binding var syncedSelection: Date?
     
@@ -661,6 +680,10 @@ struct WaterChartOutputView: View {
                                 if let closest = sampledData.min(by: {
                                     abs($0.time.timeIntervalSince(date)) < abs($1.time.timeIntervalSince(date))
                                 }) {
+                                    // Store previous selection before updating
+                                    if selectedDataPoint == nil {
+                                        previousSelectedDataPoint = nil
+                                    }
                                     selectedDataPoint = closest
                                     lollipopVisible = true
                                 }
@@ -671,7 +694,8 @@ struct WaterChartOutputView: View {
                         .onChanged { value in
                             switch value {
                             case .first(true):
-                                // long press began, no drag yet
+                                // Store current selection before sync mode
+                                previousSelectedDataPoint = selectedDataPoint
                                 break
                             case .second(true, let drag?):
                                 if let date: Date = proxy.value(atX: drag.location.x) {
@@ -684,6 +708,9 @@ struct WaterChartOutputView: View {
                         }
                         .onEnded { _ in
                             syncedSelection = nil
+                            // Restore previous selection after sync ends
+                            selectedDataPoint = previousSelectedDataPoint
+                            lollipopVisible = previousSelectedDataPoint != nil
                         }
                     
                     Rectangle()
