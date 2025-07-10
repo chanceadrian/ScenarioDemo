@@ -6,18 +6,40 @@
 //
 
 import SwiftUI
+import Charts
 
 struct WaterPurifierView: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var selectedIndices: Set<Int> = [0]
     @State private var schematicSelection: Int = 0
     
+    private var impellerDipTime: String? {
+        let data = WaterChartSpeedView.generateData()
+        for i in 1..<data.count {
+            let prev = data[i-1].rpm
+            let current = data[i].rpm
+            if prev - current > 500 {
+                let formatter = DateFormatter()
+                formatter.dateStyle = .none
+                formatter.timeStyle = .short
+                return formatter.string(from: data[i].time)
+            }
+        }
+        return nil
+    }
+    
     var body: some View {
         
         HStack(alignment: .top, spacing: 32) {
             PanelView(
                 panelTitle: "Water Purifier",
-                panelSubtitle: "Starting at 4:55, Water Purifier Impeller Speed breached low threshold. Output now 0L/hour.",
+                panelSubtitle: {
+                    if let time = impellerDipTime {
+                        return "Starting at \(time), Water Purifier Impeller Speed breached low threshold."
+                    } else {
+                        return "Water Purifier Impeller Speed breached low threshold."
+                    }
+                }(),
                 pickerEntries: schematicSelection == 1 ? [
                     PickerEntry(color: .mint, name: "Speed", unit: "RPM"),
                     PickerEntry(color: .cyan, name: "Power Draw", unit: "Voltage"),
@@ -130,4 +152,3 @@ struct WaterPurifierLogView: View {
         WaterPurifierView()
     }
 }
-
