@@ -166,12 +166,9 @@ struct PowerSystemChartView: View {
         
         VStack(alignment: .leading) {
             HStack {
-                Text("System Voltage")
-                    .font(.headline)
                 Spacer()
                 Text("V")
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
             }
             
             ZStack {

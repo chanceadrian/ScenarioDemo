@@ -25,20 +25,6 @@ struct AffectedSystemsView: View {
                     }
                     .font(.body)
                 }
-                
-                // Proximate Cause
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("Proximate Cause")
-                        .font(.body)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.secondary)
-                        .padding(.vertical, 10)
-                        .padding(.horizontal)
-
-                    ExpandableListItem(title: "Water Purifier") {
-                        WaterPurifierView()
-                    }
-                }
 
                 // Downstream Impacts
                 VStack(alignment: .leading, spacing: 0) {
@@ -50,7 +36,7 @@ struct AffectedSystemsView: View {
                         .padding(.horizontal)
 
                     VStack(spacing: 0) {
-                        ExpandableListItem(title: "Power System") {
+                        ExpandableListItem(title: "Power System", initiallyExpanded: true) {
                             PowerSystemView()
                         }
                         Divider()
@@ -66,6 +52,20 @@ struct AffectedSystemsView: View {
 
 
                 }
+                
+                // Proximate Cause
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Proximate Cause")
+                        .font(.body)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.secondary)
+                        .padding(.vertical, 10)
+                        .padding(.horizontal)
+
+                    ExpandableListItem(title: "Water Purifier") {
+                        WaterPurifierView()
+                    }
+                }
             }
             .padding(.horizontal)
         }
@@ -77,8 +77,16 @@ struct AffectedSystemsView: View {
 
 struct ExpandableListItem<Content: View>: View {
     let title: String
+    let initiallyExpanded: Bool
     let content: () -> Content
-    @State private var isExpanded: Bool = false
+    @State private var isExpanded: Bool
+
+    init(title: String, initiallyExpanded: Bool = false, @ViewBuilder content: @escaping () -> Content) {
+        self.title = title
+        self.initiallyExpanded = initiallyExpanded
+        self.content = content
+        _isExpanded = State(initialValue: initiallyExpanded)
+    }
 
     var body: some View {
         VStack(spacing: 0) {

@@ -81,7 +81,6 @@ struct TransitPhaseView: View {
         }
         .padding(.leading, 20)
         .padding(.trailing, 16)
-        .padding(.top, 16)
         .padding(.bottom, 20)
         .background(
             Color(colorScheme == .dark ? .systemGray6 : .systemBackground)
