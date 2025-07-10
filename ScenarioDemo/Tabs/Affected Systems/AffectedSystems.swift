@@ -13,53 +13,65 @@ struct AffectedSystemsView: View {
     @Environment(\.colorScheme) private var colorScheme
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-
-                // Downstream Impacts
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("Downstream Impacts")
-                        .font(.body)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.secondary)
-                        .padding(.vertical, 10)
-                        .padding(.horizontal)
-
-                    VStack(spacing: 0) {
-                        ExpandableListItem(title: "Power System", initiallyExpanded: true) {
-                            PowerSystemView()
-                        }
-                        Divider()
-                            .padding(.leading)
-                        ExpandableListItem(title: "Transit Phase Components") {
-                            TransitPhaseView()
-                        }
-                    }
-                    .background(
-                        RoundedRectangle(cornerRadius: 26, style: .continuous)
-                            .fill(colorScheme == .dark ? Color(.systemGray6) : Color(.systemBackground))
-                    )
-
-
-                }
-                
-                // Proximate Cause
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("Proximate Cause")
-                        .font(.body)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.secondary)
-                        .padding(.vertical, 10)
-                        .padding(.horizontal)
-
-                    ExpandableListItem(title: "Water Purifier", initiallyExpanded: true) {
-                        WaterPurifierView()
-                    }
+        ZStack {
+            Group {
+                if colorScheme == .dark {
+                    MeshGradientBackground()
+                        .ignoresSafeArea()
+                        .opacity(0.3)
+                } else {
+                    Color(.systemGroupedBackground)
+                        .ignoresSafeArea()
                 }
             }
-            .padding(.horizontal)
+            
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+
+                    // Downstream Impacts
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("Downstream Impacts")
+                            .font(.body)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.secondary)
+                            .padding(.vertical, 10)
+                            .padding(.horizontal)
+
+                        VStack(spacing: 0) {
+                            ExpandableListItem(title: "Power System", initiallyExpanded: true) {
+                                PowerSystemView()
+                            }
+                            Divider()
+                                .padding(.leading, 20)
+                            ExpandableListItem(title: "Transit Phase Components") {
+                                TransitPhaseView()
+                            }
+                        }
+                        .background(
+                            RoundedRectangle(cornerRadius: 26, style: .continuous)
+                                .fill(colorScheme == .dark ? Color(.systemGray6) : Color(.systemBackground))
+                        )
+
+
+                    }
+                    
+                    // Proximate Cause
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text("Proximate Cause")
+                            .font(.body)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.secondary)
+                            .padding(.vertical, 10)
+                            .padding(.horizontal)
+
+                        ExpandableListItem(title: "Water Purifier", initiallyExpanded: true) {
+                            WaterPurifierView()
+                        }
+                    }
+                }
+                .padding(.horizontal)
+            }
         }
-        .background(Color(.systemGroupedBackground).ignoresSafeArea())
     }
 }
 
@@ -96,8 +108,8 @@ struct ExpandableListItem<Content: View>: View {
                         .fontWeight(.semibold)
                         .foregroundStyle(.secondary)
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 15)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
@@ -108,7 +120,7 @@ struct ExpandableListItem<Content: View>: View {
             }
         }
         .background(
-            (colorScheme == .dark ? Color(.systemGray6) : Color(.systemGroupedBackground))
+            (colorScheme == .dark ? Color(.systemGray6) : Color(.systemBackground))
         )
         .cornerRadius(26)
     }

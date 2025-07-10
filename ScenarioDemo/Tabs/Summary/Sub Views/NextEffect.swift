@@ -140,7 +140,6 @@ struct NextEffect: View {
             }
         }
         .padding(.vertical, 4)
-        .background(Color(.systemGroupedBackground))
         .onAppear {
             initializeEndDates()
             startTimer()
