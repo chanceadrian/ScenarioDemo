@@ -11,7 +11,7 @@ import Charts
 struct WaterPurifierView: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var selectedIndices: Set<Int> = [0]
-    @State private var schematicSelection: Int = 0
+    @State private var schematicSelection: Int = 1 // Default to Data tab
     
     private var impellerDipTime: String? {
         let data = WaterChartSpeedView.generateData()

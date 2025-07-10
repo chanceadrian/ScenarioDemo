@@ -7,10 +7,11 @@
 
 import SwiftUI
 
+
 struct PowerSystemView: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var selectedIndices: Set<Int> = [0, 1, 2] // All buses selected by default
-    @State private var schematicSelection: Int = 0 // Track segmented control state
+    @State private var schematicSelection: Int = 0 // Default to schematic tab
     
     var body: some View {
         
@@ -109,3 +110,4 @@ struct LogEntryView: View {
             .padding()
     }
 }
+

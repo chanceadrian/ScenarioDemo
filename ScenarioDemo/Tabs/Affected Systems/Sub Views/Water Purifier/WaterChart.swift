@@ -296,14 +296,14 @@ struct WaterChartSpeedView: View {
                     x: .value("Time", point.time),
                     y: .value("RPM", point.rpm)
                 )
-                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.mint)
+                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.teal)
                 .lineStyle(StrokeStyle(lineWidth: 2))
                 PointMark(
                     x: .value("Time", point.time),
                     y: .value("RPM", point.rpm)
                 )
                 .symbol(Circle())
-                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.mint)
+                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.teal)
                 
                 // Thresholds
                 let lowThreshold = 2100
@@ -341,7 +341,7 @@ struct WaterChartSpeedView: View {
                         yValue: { $0.rpm },
                         label: { "\(Int($0.rpm)) RPM" },
                         timeLabel: { $0.time.formatted(date: .omitted, time: .shortened) },
-                        color: .mint,
+                        color: .teal,
                         syncedSelection: $syncedSelection
                     )
                 }
@@ -452,14 +452,14 @@ struct WaterChartPowerView: View {
                     x: .value("Time", point.time),
                     y: .value("V", point.voltage)
                 )
-                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.cyan)
+                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.brown)
                 .lineStyle(StrokeStyle(lineWidth: 2))
                 PointMark(
                     x: .value("Time", point.time),
                     y: .value("V", point.voltage)
                 )
-                .symbol(.circle)
-                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.cyan)
+                .symbol(.square)
+                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.brown)
                 
                 // Thresholds
                 let highThreshold = 360.0
@@ -497,7 +497,7 @@ struct WaterChartPowerView: View {
                         yValue: { $0.voltage },
                         label: { "\(Int($0.voltage)) V" },
                         timeLabel: { $0.time.formatted(date: .omitted, time: .shortened) },
-                        color: .cyan,
+                        color: .brown,
                         syncedSelection: $syncedSelection
                     )
                 }
@@ -608,14 +608,14 @@ struct WaterChartOutputView: View {
                     x: .value("Time", point.time),
                     y: .value("L", point.liters)
                 )
-                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.indigo)
+                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.blue)
                 .lineStyle(StrokeStyle(lineWidth: 2))
                 PointMark(
                     x: .value("Time", point.time),
                     y: .value("L", point.liters)
                 )
-                .symbol(.circle)
-                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.indigo)
+                .symbol(.triangle)
+                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.blue)
                 
                 // Thresholds
                 let lowThreshold = 4.0
@@ -653,7 +653,7 @@ struct WaterChartOutputView: View {
                         yValue: { $0.liters },
                         label: { String(format: "%.2f L", $0.liters) },
                         timeLabel: { $0.time.formatted(date: .omitted, time: .shortened) },
-                        color: .indigo,
+                        color: .blue,
                         syncedSelection: $syncedSelection
                     )
                 }
