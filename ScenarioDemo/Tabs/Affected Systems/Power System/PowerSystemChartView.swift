@@ -93,7 +93,15 @@ struct PowerSystemChartView: View {
             case .threeHour: return 6
             }
         }()
-        let sampledData = visibleData.enumerated().compactMap { idx, dp in idx % stride == 0 ? dp : nil }
+        
+        // Fixed sampling logic - group by time first, then sample
+        let groupedByTime = Dictionary(grouping: visibleData) { $0.time }
+        let sampledTimes = groupedByTime.keys.sorted().enumerated().compactMap { idx, time in
+            idx % stride == 0 ? time : nil
+        }
+        let sampledData = sampledTimes.flatMap { time in
+            groupedByTime[time] ?? []
+        }
         
         // Use the same x-axis stride as water purifier
         let xAxisStride: Int = {
@@ -305,7 +313,7 @@ struct PowerSystemChartView: View {
     ZStack {
         Color(.systemGroupedBackground)
             .ignoresSafeArea()
-        AffectedSystemsView()
+        PowerSystemChartView(selectedIndices: .constant(Set([0, 1, 2])))
             .padding()
     }
 }
