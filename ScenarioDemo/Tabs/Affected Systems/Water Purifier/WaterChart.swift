@@ -769,4 +769,3 @@ struct Triangle: Shape {
 #Preview {
     WaterPurifierView()
 }
-

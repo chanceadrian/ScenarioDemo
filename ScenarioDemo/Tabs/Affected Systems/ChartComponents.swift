@@ -211,8 +211,7 @@ struct FilterListView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .contentShape(Rectangle())
                     }
-                    .padding(.vertical, 15)
-                    .padding(.horizontal)
+                    .padding()
                     .buttonStyle(PlainButtonStyle())
                     if index < entries.count - 1 {
                         Divider().padding(.leading)
