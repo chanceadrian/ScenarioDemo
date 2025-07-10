@@ -283,7 +283,6 @@ struct WaterChartSpeedView: View {
                 Spacer()
                 Text("RPM")
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
             }
             if let drasticTime = drasticChangeTime {
                 Text("Significant drop detected at \(drasticTime.formatted(date: .omitted, time: .shortened))")
@@ -439,7 +438,6 @@ struct WaterChartPowerView: View {
                 Spacer()
                 Text("V")
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
             }
             if let drasticTime = drasticChangeTime {
                 Text("Significant spike detected at \(drasticTime.formatted(date: .omitted, time: .shortened))")
@@ -595,7 +593,6 @@ struct WaterChartOutputView: View {
                 Spacer()
                 Text("L")
                     .font(.subheadline)
-                    .foregroundColor(.secondary)
             }
             if let drasticTime = drasticChangeTime {
                 Text("Significant output drop detected at \(drasticTime.formatted(date: .omitted, time: .shortened))")

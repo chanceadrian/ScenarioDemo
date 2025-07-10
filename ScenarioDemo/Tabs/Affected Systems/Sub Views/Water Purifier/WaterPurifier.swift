@@ -41,9 +41,9 @@ struct WaterPurifierView: View {
                     }
                 }(),
                 pickerEntries: schematicSelection == 1 ? [
-                    PickerEntry(color: .mint, name: "Speed", unit: "RPM"),
-                    PickerEntry(color: .cyan, name: "Power Draw", unit: "Voltage"),
-                    PickerEntry(color: .indigo, name: "Output", unit: "Liters")
+                    PickerEntry(color: .teal, name: "Speed", unit: "RPM", sfSymbol: "circle.fill"),
+                    PickerEntry(color: .brown, name: "Power Draw", unit: "Voltage", sfSymbol: "square.fill"),
+                    PickerEntry(color: .blue, name: "Output", unit: "Liters", sfSymbol: "triangle.fill")
                 ] : [],
                 hintMessage: "If not resolved, clean water supply will run low in ",
                 hintHighlight: "6 days.",
@@ -138,7 +138,7 @@ struct WaterPurifierLogView: View {
                 }
                 .font(.subheadline)
             }
-            .padding()
+            .padding(.horizontal)
             .cornerRadius(26)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

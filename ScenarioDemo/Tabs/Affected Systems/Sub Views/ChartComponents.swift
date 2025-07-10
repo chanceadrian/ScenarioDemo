@@ -55,7 +55,6 @@ struct PanelView: View {
         }
         .animation(.spring(response: 0.38, dampingFraction: 0.74), value: isDataSelected?() ?? true)
         .frame(width: 290)
-        .padding(.vertical, 8)
     }
 }
 
@@ -64,12 +63,14 @@ struct PickerEntry {
     let name: String
     let unit: String
     let showIndicator: Bool
+    let sfSymbol: String
     
-    init(color: Color, name: String, unit: String, showIndicator: Bool = true) {
+    init(color: Color, name: String, unit: String, showIndicator: Bool = true, sfSymbol: String = "circle.fill") {
         self.color = color
         self.name = name
         self.unit = unit
         self.showIndicator = showIndicator
+        self.sfSymbol = sfSymbol
     }
 }
 
@@ -79,9 +80,6 @@ struct PanelHeaderView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8){
-            Text(title)
-                .font(.title)
-                .fontWeight(.semibold)
             Text(subtitle)
         }
     }
@@ -107,9 +105,10 @@ struct PickerView: View {
                     HStack {
                         HStack {
                             if entry.showIndicator {
-                                Circle()
-                                    .frame(width: 8, height: 8)
+                                Image(systemName: entry.sfSymbol)
+                                    .font(.caption)
                                     .foregroundStyle(selectedIndices.contains(index) ? .white : entry.color)
+                                    .frame(width: 18, height: 18, alignment: .center)
                             }
                             Text(entry.name)
                                 .font(.body)
