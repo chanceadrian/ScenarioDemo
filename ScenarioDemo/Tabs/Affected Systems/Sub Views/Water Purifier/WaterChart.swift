@@ -81,20 +81,17 @@ struct ChartLollipopOverlay<DataPoint: Identifiable>: View {
                     .frame(width: radius*2, height: radius*2)
                     .position(x: xPos, y: yPos)
                 VStack(spacing: 0) {
-                    VStack(spacing: 2) {
+                    VStack(spacing: 0) {
                         Text(timeLabel(selected))
                             .font(.caption2)
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(.white)
                         Text(label(selected))
                             .font(.caption.bold())
+                            .foregroundStyle(.white)
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(RoundedRectangle(cornerRadius: 8).fill(Color(.systemBackground).opacity(0.95)))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(color, lineWidth: 1)
-                    )
+                    .background(RoundedRectangle(cornerRadius: 8).fill(color.opacity(0.95)))
                     Spacer().frame(height: 4)
                 }
                 .position(x: xPos, y: yPos - 24)
@@ -176,21 +173,23 @@ struct WaterChartView: View {
                     }
             }
             .pickerStyle(.segmented)
-            .padding(.horizontal)
             
             VStack(spacing: 20) {
                 if selectedIndices.contains(0) {
                     WaterChartSpeedView(domain: timeDomain, syncedSelection: $syncedSelection, timeRange: selectedTimeRange)
+                        .transition(.scale(scale: 0.92).combined(with: .opacity))
                 }
                 if selectedIndices.contains(1) {
                     WaterChartPowerView(domain: timeDomain, syncedSelection: $syncedSelection, timeRange: selectedTimeRange)
+                        .transition(.scale(scale: 0.92).combined(with: .opacity))
                 }
                 if selectedIndices.contains(2) {
                     WaterChartOutputView(domain: timeDomain, syncedSelection: $syncedSelection, timeRange: selectedTimeRange)
+                        .transition(.scale(scale: 0.92).combined(with: .opacity))
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .animation(.easeInOut(duration: 0.45), value: selectedTimeRange)
+            .animation(.spring(response: 0.38, dampingFraction: 0.74), value: selectedIndices)
         }
     }
 }
@@ -269,10 +268,10 @@ struct WaterChartSpeedView: View {
         
         let xAxisStride: Int = {
             switch timeRange {
-            case .thirtyMin: return 3
-            case .oneHour: return 6
-            case .twoHour: return 12
-            case .threeHour: return 18
+            case .thirtyMin: return 6
+            case .oneHour: return 12
+            case .twoHour: return 18
+            case .threeHour: return 24
             }
         }()
         
@@ -283,11 +282,6 @@ struct WaterChartSpeedView: View {
                 Spacer()
                 Text("RPM")
                     .font(.subheadline)
-            }
-            if let drasticTime = drasticChangeTime {
-                Text("Significant drop detected at \(drasticTime.formatted(date: .omitted, time: .shortened))")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
             let showingSync = syncedSelection != nil
             Chart(sampledData) { point in
@@ -424,10 +418,10 @@ struct WaterChartPowerView: View {
         
         let xAxisStride: Int = {
             switch timeRange {
-            case .thirtyMin: return 3
-            case .oneHour: return 6
-            case .twoHour: return 12
-            case .threeHour: return 18
+            case .thirtyMin: return 6
+            case .oneHour: return 12
+            case .twoHour: return 18
+            case .threeHour: return 24
             }
         }()
         
@@ -438,11 +432,6 @@ struct WaterChartPowerView: View {
                 Spacer()
                 Text("V")
                     .font(.subheadline)
-            }
-            if let drasticTime = drasticChangeTime {
-                Text("Significant spike detected at \(drasticTime.formatted(date: .omitted, time: .shortened))")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
             let showingSync = syncedSelection != nil
             Chart(sampledData) { point in
@@ -579,10 +568,10 @@ struct WaterChartOutputView: View {
         
         let xAxisStride: Int = {
             switch timeRange {
-            case .thirtyMin: return 3
-            case .oneHour: return 6
-            case .twoHour: return 12
-            case .threeHour: return 18
+            case .thirtyMin: return 6
+            case .oneHour: return 12
+            case .twoHour: return 18
+            case .threeHour: return 24
             }
         }()
         
@@ -593,11 +582,6 @@ struct WaterChartOutputView: View {
                 Spacer()
                 Text("L")
                     .font(.subheadline)
-            }
-            if let drasticTime = drasticChangeTime {
-                Text("Significant output drop detected at \(drasticTime.formatted(date: .omitted, time: .shortened))")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
             let showingSync = syncedSelection != nil
             Chart(sampledData) { point in
@@ -663,3 +647,4 @@ struct WaterChartOutputView: View {
 #Preview {
     WaterPurifierView()
 }
+
