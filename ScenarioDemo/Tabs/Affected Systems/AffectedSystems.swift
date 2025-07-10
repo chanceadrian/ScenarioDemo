@@ -14,18 +14,6 @@ struct AffectedSystemsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Affected Systems")
-                        .font(.title)
-                        .fontWeight(.semibold)
-                    VStack(alignment: .leading, spacing: 4) {
-                        (Text("Water Purifier:").fontWeight(.semibold) + Text(" Low impeller speed, high power draw."))
-                        (Text("Power Bus 3:").fontWeight(.semibold) + Text(" Overload in 52 minutes."))
-                        (Text("Transit Phase Components:").fontWeight(.semibold) + Text(" Rerouted to Bus-3 to maintain operations."))
-                    }
-                    .font(.body)
-                }
-
                 // Downstream Impacts
                 VStack(alignment: .leading, spacing: 0) {
                     Text("Downstream Impacts")
@@ -62,7 +50,7 @@ struct AffectedSystemsView: View {
                         .padding(.vertical, 10)
                         .padding(.horizontal)
 
-                    ExpandableListItem(title: "Water Purifier") {
+                    ExpandableListItem(title: "Water Purifier", initiallyExpanded: true) {
                         WaterPurifierView()
                     }
                 }
@@ -91,7 +79,9 @@ struct ExpandableListItem<Content: View>: View {
     var body: some View {
         VStack(spacing: 0) {
             Button(action: {
-                isExpanded.toggle()
+                withAnimation(.spring(response: 0.38, dampingFraction: 0.8)) {
+                    isExpanded.toggle()
+                }
             }) {
                 HStack {
                     Text(title)
@@ -100,7 +90,8 @@ struct ExpandableListItem<Content: View>: View {
                     Spacer()
                     Image(systemName: "chevron.right")
                         .rotationEffect(.degrees(isExpanded ? 90 : 0))
-                        .foregroundColor(.secondary)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.secondary)
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 15)
@@ -108,18 +99,16 @@ struct ExpandableListItem<Content: View>: View {
             }
             .buttonStyle(.plain)
 
-
             if isExpanded {
                 content()
-                    .transition(.scale(scale: 1, anchor: .top))
-                    .animation(.interpolatingSpring(stiffness: 35, damping: 20), value: isExpanded)
+                    .transition(.opacity)
             }
         }
         .background(Color(.systemBackground))
         .cornerRadius(26)
-        .animation(.spring(response: 0.3, dampingFraction: 0.9), value: isExpanded)
     }
 }
+
 
 #Preview {
     ContentView()

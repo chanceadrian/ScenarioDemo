@@ -7,6 +7,16 @@
 
 import SwiftUI
 
+func dateString(daysAgo: Int, hour: Int = 9, minute: Int = 0) -> String {
+    let formatter = DateFormatter()
+    formatter.dateFormat = "MMMM d, yyyy 'at' h:mm a"
+    formatter.locale = Locale(identifier: "en_US_POSIX")
+    guard let date = Calendar.current.date(byAdding: .day, value: -daysAgo, to: Date()) else {
+        return ""
+    }
+    let customDate = Calendar.current.date(bySettingHour: hour, minute: minute, second: 0, of: date) ?? date
+    return formatter.string(from: customDate)
+}
 
 struct PowerSystemView: View {
     @Environment(\.colorScheme) private var colorScheme
@@ -58,26 +68,132 @@ struct PowerSystemView: View {
     }
 }
 
+struct PowerSystemLogEntry: Identifiable {
+    let id = UUID()
+    let author: String
+    let purpose: String
+    let relevantComponents: String
+    let message: String
+    let dateTime: String
+    
+    var relativeTimeAgo: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMMM d, yyyy 'at' h:mm a"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        guard let date = formatter.date(from: dateTime) else {
+            return ""
+        }
+        
+        let now = Date.now
+        let diff = Calendar.current.dateComponents([.day], from: date, to: now)
+        guard let days = diff.day else {
+            return ""
+        }
+        
+        if days >= 60 {
+            let months = days / 30
+            return "\(months) month\(months > 1 ? "s" : "") ago"
+        } else if days >= 1 {
+            return "\(days) day\(days > 1 ? "s" : "") ago"
+        } else {
+            return "Today"
+        }
+    }
+}
 
 struct PowerSystemLogView: View {
+    
+    let logs: [PowerSystemLogEntry] = [
+        PowerSystemLogEntry(
+            author: "Evolone Layne, Crew Member",
+            purpose: "Routine Maintenance",
+            relevantComponents: "Battery 3, Power Bus 3",
+            message: "During routine discharge test, Bus 3 voltage dipped about 0.2 V lower than usual near end of cycle. Still well within nominal limits, no relationship with Battery 3 output. Logging in case MCC wants to track.",
+            dateTime: dateString(daysAgo: 10, hour: 7, minute: 36)
+        ),
+        PowerSystemLogEntry(
+            author: "Chance Castaneda, Crew Member",
+            purpose: "Component Irregularity",
+            relevantComponents: "Battery 2 wiring",
+            message: "Inspected Battery 2 wiring. One connector loose at Bus 2 junction. Reseated and resoldered. Ran short charge/discharge cycle and resistance readings now look clean.",
+            dateTime: dateString(daysAgo: 39, hour: 16, minute: 30)
+        ),
+        PowerSystemLogEntry(
+            author: "Riya Mody, MCC",
+            purpose: "Component Irregularity",
+            relevantComponents: "Battery 2",
+            message: "Noticed a brief spike in Battery 2 internal resistance during charge window — lasted ~6 seconds, not consistent with expected curve. Could be sensor drift or transient contact issue. Updated today's schedule to include component check.",
+            dateTime: dateString(daysAgo: 39, hour: 9, minute: 41)
+        ),
+        PowerSystemLogEntry(
+            author: "Evolone Layne, Crew Member",
+            purpose: "Component Irregularity",
+            relevantComponents: "Power Bus 3",
+            message: "Logged a brief low output warning from Bus 3 during treadmill session. Lasted under 10 sec, no impact to performance. Didn’t recur in follow-up test an hour later.",
+            dateTime: dateString(daysAgo: 65, hour: 20, minute: 41)
+        ),
+        PowerSystemLogEntry(
+            author: "Carter Owen, Crew Member",
+            purpose: "Routine Maintenance",
+            relevantComponents: "Battery 2",
+            message: "Ran a standard discharge test on Battery 2 today. Dropped from 93% to 72% in 47 minutes under consistent load. No voltage sag, temps steady. Looks normal.",
+            dateTime: dateString(daysAgo: 79, hour: 17, minute: 3)
+        ),
+        PowerSystemLogEntry(
+            author: "Riya Mody, MCC",
+            purpose: "Crew Note",
+            relevantComponents: "Battery 2, Power Bus 2",
+            message: "Battery 2 discharged a little faster than modeled during the 0600–0700 window — dropped ~16% in 54 min. Still within spec, but logging in case it correlates with longer-term drift.",
+            dateTime: dateString(daysAgo: 86, hour: 7, minute: 18)
+        )
+    ]
+    
+    var groupedLogs: [(key: String, value: [PowerSystemLogEntry])] {
+        Dictionary(grouping: logs, by: { $0.purpose })
+            .sorted { $0.key < $1.key }
+    }
+    
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("Power System Logs")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                    .padding(.bottom, 8)
-                
-                LogEntryView(time: "4:57 PM", message: "System diverted transit-critical loads from Bus 2 to Bus 3 due to power shortfall.")
-                LogEntryView(time: "5:10 PM", message: "Bus 3 voltage approaching upper safety limit.")
-                LogEntryView(time: "5:20 PM", message: "Load adjustment initiated on Bus 1 to compensate fluctuations.")
-                LogEntryView(time: "5:30 PM", message: "Monitoring system status for Bus 2 power restoration.")
-                
-                Spacer()
+        List {
+            ForEach(groupedLogs, id: \.key) { purpose, entries in
+                Section(header:
+                            Text(purpose)
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                            .padding(.top, 6)
+                ) {
+                    ForEach(entries) { log in
+                        VStack(alignment: .leading, spacing: 6) {
+                            HStack {
+                                Text(log.relevantComponents)
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundColor(.primary)
+                                
+                                Spacer()
+                                
+                                Text(log.relativeTimeAgo)
+                                    .font(.footnote)
+                                    .foregroundColor(.secondary)
+                            }
+                            Text(log.message)
+                                .font(.subheadline)
+                                .foregroundColor(.primary)
+                            HStack {
+                                Text(log.author)
+                                    .font(.footnote)
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                                Text(log.dateTime)
+                                    .font(.caption)
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .padding(.vertical, 8)
+                    }
+                }
             }
-            .padding()
         }
-        .background(Color(.secondarySystemBackground))
+        .listStyle(.sidebar)
         .cornerRadius(16)
     }
 }
