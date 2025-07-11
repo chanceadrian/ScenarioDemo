@@ -1,4 +1,3 @@
-
 //  PowerSystem.swift
 //  ScenarioDemo
 //
@@ -27,6 +26,17 @@ struct PowerSystemView: View {
 
     private let overloadDuration: TimeInterval = 52 * 60
 
+    private var rerouteTime: Date {
+        Calendar.current.date(byAdding: .minute, value: -15, to: now)!
+    }
+
+    private var rerouteTimeString: String {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .none
+        formatter.timeStyle = .short
+        return formatter.string(from: rerouteTime)
+    }
+
     private var overloadCountdownString: String {
         let startDate: Date
         if overloadStartDate == 0 {
@@ -47,7 +57,7 @@ struct PowerSystemView: View {
         HStack(alignment: .top, spacing: 32) {
             PanelView(
                 panelTitle: "Power System",
-                panelSubtitle: "At 4:57PM, transit-critical components were diverted from Bus 2 to Bus 3 after Bus 2 exceeded its power capacity.",
+                panelSubtitle: "At \(rerouteTimeString), transit-critical components were diverted from Bus 2 to Bus 3 after Bus 2 exceeded its power capacity.",
                 pickerEntries: schematicSelection == 1 ? [
                     PickerEntry(color: .indigo, name: "Bus 1", unit: "Voltage", sfSymbol: "circle.fill"),
                     PickerEntry(color: .mint, name: "Bus 2", unit: "Voltage", sfSymbol: "square.fill"),

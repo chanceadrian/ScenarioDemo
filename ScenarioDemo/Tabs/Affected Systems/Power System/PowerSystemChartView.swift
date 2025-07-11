@@ -77,12 +77,27 @@ struct PowerSystemChartView: View {
         return allPoints
     }
     
+    private var visibleDataWithSyntheticPoints: [VoltageDataPoint] {
+        let minTime = Calendar.current.date(byAdding: .minute, value: -selectedTimeRange.minutes + 1, to: now)!
+        var visibleData = allData.filter { $0.time >= minTime && $0.time <= now }
+        
+        for busNumber in [1, 2, 3] {
+            if selectedIndices.contains(busNumber - 1) {
+                if let latest = visibleData.filter({ $0.busNumber == busNumber }).max(by: { $0.time < $1.time }) {
+                    if latest.time < now {
+                        visibleData.append(VoltageDataPoint(time: now, voltage: latest.voltage, isPredicted: false, busNumber: busNumber))
+                    }
+                }
+            }
+        }
+        return visibleData
+    }
+    
     var body: some View {
         // Use the same time filtering logic as water purifier
-        let rerouteTime = Calendar.current.date(byAdding: .minute, value: -15, to: now)!
         let minTime = Calendar.current.date(byAdding: .minute, value: -selectedTimeRange.minutes + 1, to: now)!
-        let visibleData = allData.filter { $0.time >= minTime && $0.time <= now }
         let visibleDomain = minTime...now
+        let visibleData = visibleDataWithSyntheticPoints
         
         // Use the same stride logic as water purifier
         let stride: Int = {
@@ -171,17 +186,16 @@ struct PowerSystemChartView: View {
                     .opacity(chartVisible ? 1 : 0)
 
                 RuleMark(x: .value("Now", now))
-                    .foregroundStyle(Color.red)
+                    .foregroundStyle(Color.secondary)
                     .lineStyle(StrokeStyle(lineWidth: 2))
-                    .annotation(position: .overlay, alignment: .top) {
+                    .annotation(position: .top, alignment: .trailing) {
                         Text("NOW")
-                            .font(.caption2.bold())
-                            .foregroundColor(.red)
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2)
-                            .background(.thinMaterial)
-                            .clipShape(Capsule())
-                            .padding(.top, 6) // ensures it's fully visible inside the chart
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 3)
+                            .padding(.vertical, 1)
+                            .background(Capsule().fill(Color.secondary.opacity(0.2)))
+                            .offset(x:-6,y: 25)
                     }
             }
             .chartXScale(domain: visibleDomain)
