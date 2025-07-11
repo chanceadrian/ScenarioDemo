@@ -22,6 +22,12 @@ struct PowerSystemChartView: View {
     @State private var selectedTimeRange: WaterChartTimeRange = .thirtyMin
     @State private var chartVisible: Bool = false
     @State private var now = Date()
+    
+    private var visibleDomain: ClosedRange<Date> {
+        let minTime = Calendar.current.date(byAdding: .minute, value: -selectedTimeRange.minutes + 1, to: now)!
+        return minTime...now
+    }
+    
     @State private var timer: Timer? = nil
     
     private var allData: [VoltageDataPoint] {
@@ -93,12 +99,13 @@ struct PowerSystemChartView: View {
         return visibleData
     }
     
+    private func clampedToVisibleDomain(_ date: Date) -> Date {
+        if date < visibleDomain.lowerBound { return visibleDomain.lowerBound }
+        if date > visibleDomain.upperBound { return visibleDomain.upperBound }
+        return date
+    }
+    
     var body: some View {
-        // Use the same time filtering logic as water purifier
-        let minTime = Calendar.current.date(byAdding: .minute, value: -selectedTimeRange.minutes + 1, to: now)!
-        let visibleDomain = minTime...now
-        let visibleData = visibleDataWithSyntheticPoints
-        
         // Use the same stride logic as water purifier
         let stride: Int = {
             switch selectedTimeRange {
@@ -108,6 +115,8 @@ struct PowerSystemChartView: View {
             case .threeHour: return 6
             }
         }()
+        
+        let visibleData = visibleDataWithSyntheticPoints
         
         // Fixed sampling logic - group by time first, then sample
         let groupedByTime = Dictionary(grouping: visibleData) { $0.time }
@@ -246,18 +255,18 @@ struct PowerSystemChartView: View {
                                 .onChanged { value in
                                     if let date: Date = proxy.value(atX: value.location.x) {
                                         let snappedTime = snapTime(date: date)
-                                        lollipopTime = snappedTime
+                                        lollipopTime = clampedToVisibleDomain(snappedTime)
                                     }
                                 }
                                 .onEnded { value in
                                     if let date: Date = proxy.value(atX: value.location.x) {
                                         let snappedTime = snapTime(date: date)
-                                        lollipopTime = snappedTime
+                                        lollipopTime = clampedToVisibleDomain(snappedTime)
                                     }
                                 }
                         )
                     
-                    if let selectedTime = lollipopTime,
+                    if let selectedTime = lollipopTime, visibleDomain.contains(selectedTime),
                        let xPos = proxy.position(forX: selectedTime),
                        let plotFrameAnchor = proxy.plotFrame {
                         let plotRect = geo[plotFrameAnchor]
