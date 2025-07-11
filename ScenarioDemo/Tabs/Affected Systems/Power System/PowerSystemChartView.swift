@@ -169,6 +169,20 @@ struct PowerSystemChartView: View {
                         Text("Bus Capacity").foregroundColor(.orange).font(.footnote)
                     }
                     .opacity(chartVisible ? 1 : 0)
+
+                RuleMark(x: .value("Now", now))
+                    .foregroundStyle(Color.red)
+                    .lineStyle(StrokeStyle(lineWidth: 2))
+                    .annotation(position: .overlay, alignment: .top) {
+                        Text("NOW")
+                            .font(.caption2.bold())
+                            .foregroundColor(.red)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(.thinMaterial)
+                            .clipShape(Capsule())
+                            .padding(.top, 6) // ensures it's fully visible inside the chart
+                    }
             }
             .chartXScale(domain: visibleDomain)
             .chartYScale(domain: 50...300)
@@ -316,3 +330,4 @@ struct PowerSystemChartView: View {
             .padding()
     }
 }
+

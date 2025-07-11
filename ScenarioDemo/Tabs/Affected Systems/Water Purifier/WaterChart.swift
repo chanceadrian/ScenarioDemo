@@ -7,6 +7,36 @@
 
 import SwiftUI
 import Charts
+import Combine
+
+class WaterChartDataCoordinator: ObservableObject {
+    @Published var speedData: [WaterChartSpeedView.DataPoint]
+    @Published var powerData: [WaterChartPowerView.DataPoint]
+    @Published var outputData: [WaterChartOutputView.DataPoint]
+
+    private var timer: Timer?
+
+    init() {
+        self.speedData = WaterChartSpeedView.generateData()
+        self.powerData = WaterChartPowerView.generateData()
+        self.outputData = WaterChartOutputView.generateData()
+        startTimer()
+    }
+
+    private func startTimer() {
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { [weak self] _ in
+            guard let self = self else { return }
+            self.speedData = WaterChartSpeedView.generateData()
+            self.powerData = WaterChartPowerView.generateData()
+            self.outputData = WaterChartOutputView.generateData()
+        }
+    }
+
+    deinit {
+        timer?.invalidate()
+    }
+}
 
 // Helper to compute a shared padded time domain
 func computePaddedTimeDomain(_ arrays: [[Date]]) -> ClosedRange<Date> {
@@ -38,11 +68,13 @@ struct WaterChartView: View {
     
     let selectedIndices: Set<Int>
     
+    @StateObject private var dataCoordinator = WaterChartDataCoordinator()
+
     // Compute shared time domain for stacking alignment
     private var timeDomain: ClosedRange<Date> {
-        let speedTimes = WaterChartSpeedView.generateData().map { $0.time }
-        let powerTimes = WaterChartPowerView.generateData().map { $0.time }
-        let outputTimes = WaterChartOutputView.generateData().map { $0.time }
+        let speedTimes = dataCoordinator.speedData.map { $0.time }
+        let powerTimes = dataCoordinator.powerData.map { $0.time }
+        let outputTimes = dataCoordinator.outputData.map { $0.time }
         return computePaddedTimeDomain([speedTimes, powerTimes, outputTimes])
     }
     
@@ -66,16 +98,16 @@ struct WaterChartView: View {
             
             VStack(spacing: 20) {
                 if selectedIndices.contains(0) {
-                    WaterChartSpeedView(domain: timeDomain, timeRange: selectedTimeRange, syncedSelection: $syncedSelection)
-                        .transition(.scale(scale: 0.92).combined(with: .opacity))
+                    WaterChartSpeedView(domain: timeDomain, timeRange: selectedTimeRange, syncedSelection: $syncedSelection, dataCoordinator: dataCoordinator)
+                        .transition(.opacity)
                 }
                 if selectedIndices.contains(1) {
-                    WaterChartPowerView(domain: timeDomain, timeRange: selectedTimeRange, syncedSelection: $syncedSelection)
-                        .transition(.scale(scale: 0.92).combined(with: .opacity))
+                    WaterChartPowerView(domain: timeDomain, timeRange: selectedTimeRange, syncedSelection: $syncedSelection, dataCoordinator: dataCoordinator)
+                        .transition(.opacity)
                 }
                 if selectedIndices.contains(2) {
-                    WaterChartOutputView(domain: timeDomain, timeRange: selectedTimeRange, syncedSelection: $syncedSelection)
-                        .transition(.scale(scale: 0.92).combined(with: .opacity))
+                    WaterChartOutputView(domain: timeDomain, timeRange: selectedTimeRange, syncedSelection: $syncedSelection, dataCoordinator: dataCoordinator)
+                        .transition(.opacity)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -92,7 +124,6 @@ struct WaterChartSpeedView: View {
         let rpm: Double
     }
     
-    @State private var data: [DataPoint]
     @State private var selectedDataPoint: DataPoint? = nil
     @State private var lollipopVisible: Bool = true
     @State private var previousSelectedDataPoint: DataPoint? = nil
@@ -102,16 +133,37 @@ struct WaterChartSpeedView: View {
     let domain: ClosedRange<Date>?
     let timeRange: WaterChartTimeRange
     
-    // Computed property to determine if we're showing sync mode
+    let dataCoordinator: WaterChartDataCoordinator
+    
+    private var data: [DataPoint] {
+        dataCoordinator.speedData
+    }
+    
+    private var visibleData: [DataPoint] {
+        let now = Date()
+        let minTimeBase = Calendar.current.date(byAdding: .minute, value: -timeRange.minutes + 1, to: now)!
+        var filtered = data.filter { $0.time >= minTimeBase && $0.time <= now }
+        if let first = filtered.first, first.time > minTimeBase {
+            let synthesized = DataPoint(time: minTimeBase, rpm: first.rpm)
+            filtered.insert(synthesized, at: 0)
+        }
+        let lastTime = filtered.last?.time ?? now
+        if now.timeIntervalSince(lastTime) >= 60 {
+            let synthesized = DataPoint(time: now, rpm: filtered.last?.rpm ?? 0)
+            filtered.append(synthesized)
+        }
+        return filtered
+    }
+    
     private var showingSync: Bool {
         syncedSelection != nil
     }
     
-    init(domain: ClosedRange<Date>? = nil, timeRange: WaterChartTimeRange, syncedSelection: Binding<Date?>) {
-        self._data = State(initialValue: Self.generateData())
+    init(domain: ClosedRange<Date>? = nil, timeRange: WaterChartTimeRange, syncedSelection: Binding<Date?>, dataCoordinator: WaterChartDataCoordinator) {
         self.domain = domain
         self.timeRange = timeRange
         self._syncedSelection = syncedSelection
+        self.dataCoordinator = dataCoordinator
     }
     
     static func generateData() -> [DataPoint] {
@@ -123,44 +175,55 @@ struct WaterChartSpeedView: View {
         var points = [DataPoint]()
         var currentTime = startTime
         var minuteIndex = 0
-        while currentTime <= now {
+        while currentTime < now {
             if currentTime < dipStart {
-                // ~3000 RPM with slight random variation
                 let rpm = 2950 + Double.random(in: 0...100)
                 points.append(DataPoint(time: currentTime, rpm: rpm))
             } else {
-                // just above 0 (10–80 RPM with some random variation)
                 let rpm = Double.random(in: 10...80)
                 points.append(DataPoint(time: currentTime, rpm: rpm))
             }
             currentTime = calendar.date(byAdding: .minute, value: 1, to: currentTime)!
             minuteIndex += 1
         }
+        if now < dipStart {
+            let rpm = 2950 + Double.random(in: 0...100)
+            points.append(DataPoint(time: now, rpm: rpm))
+        } else {
+            let rpm = Double.random(in: 10...80)
+            points.append(DataPoint(time: now, rpm: rpm))
+        }
         return points
     }
     
     var body: some View {
         let now = Date()
-        let minTime = Calendar.current.date(byAdding: .minute, value: -timeRange.minutes + 1, to: now)!
-        let visibleData = data.filter { $0.time >= minTime && $0.time <= now }
-        let visibleDomain = minTime...now
+        // Use the last real data point's time (last before synthetic point)
+        let lastTime = visibleData.last?.time ?? now
+        // Determine if synthetic point is appended (60s or more since last real)
+        let shouldShowSynthetic = now.timeIntervalSince(lastTime) >= 60
+        let effectiveNow = shouldShowSynthetic ? now : lastTime
+        let minTime = Calendar.current.date(byAdding: .minute, value: -timeRange.minutes + 1, to: effectiveNow)!
+        let fullData = visibleData
         
         let stride: Int = {
             switch timeRange {
             case .thirtyMin: return 1
-            case .oneHour: return 2
-            case .twoHour: return 4
-            case .threeHour: return 6
+            case .oneHour: return 4
+            case .twoHour: return 8
+            case .threeHour: return 12
             }
         }()
-        let sampledData = visibleData.enumerated().compactMap { idx, dp in idx % stride == 0 ? dp : nil }
+        let sampledData = fullData.enumerated().compactMap { idx, dp in idx % stride == 0 ? dp : nil }
+        
+        let visibleDomain = minTime...effectiveNow
         
         let xAxisStride: Int = {
             switch timeRange {
-            case .thirtyMin: return 6
-            case .oneHour: return 12
-            case .twoHour: return 18
-            case .threeHour: return 24
+            case .thirtyMin: return 5
+            case .oneHour: return 15
+            case .twoHour: return 30
+            case .threeHour: return 60
             }
         }()
         
@@ -173,24 +236,40 @@ struct WaterChartSpeedView: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
-            Chart(sampledData) { point in
-                LineMark(
-                    x: .value("Time", point.time),
-                    y: .value("RPM", point.rpm)
-                )
-                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.teal)
-                .lineStyle(StrokeStyle(lineWidth: 2))
-                PointMark(
-                    x: .value("Time", point.time),
-                    y: .value("RPM", point.rpm)
-                )
-                .symbol(Circle())
-                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.teal)
+            Chart {
+                ForEach(fullData) { point in
+                    LineMark(
+                        x: .value("Time", point.time),
+                        y: .value("RPM", point.rpm)
+                    )
+                    .interpolationMethod(.linear)
+                    .foregroundStyle(showingSync ? Color(.systemGray3) : Color.teal)
+                    .lineStyle(StrokeStyle(lineWidth: 2))
+                }
+                ForEach(sampledData) { point in
+                    PointMark(
+                        x: .value("Time", point.time),
+                        y: .value("RPM", point.rpm)
+                    )
+                    .symbol(Circle())
+                    .foregroundStyle(showingSync ? Color(.systemGray3) : Color.teal)
+                }
                 
-                // Thresholds
+                RuleMark(x: .value("Now", effectiveNow))
+                    .foregroundStyle(Color.teal)
+                    .lineStyle(StrokeStyle(lineWidth: 2))
+                    .annotation(position: .bottom, alignment: .trailing) {
+                        Text("NOW")
+                            .font(.caption2)
+                            .foregroundColor(.teal)
+                            .padding(.horizontal, 3)
+                            .padding(.vertical, 1)
+                            .background(.thinMaterial)
+                            .clipShape(Capsule())
+                    }
+                
                 let lowThreshold = 2100.0
 
-                // Low threshold line and zone
                 RuleMark(y: .value("lowThreshold", lowThreshold))
                     .foregroundStyle(.gray)
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [6, 4]))
@@ -218,7 +297,6 @@ struct WaterChartSpeedView: View {
                                 if let closest = sampledData.min(by: {
                                     abs($0.time.timeIntervalSince(date)) < abs($1.time.timeIntervalSince(date))
                                 }) {
-                                    // Store previous selection before updating
                                     if selectedDataPoint == nil {
                                         previousSelectedDataPoint = nil
                                     }
@@ -232,7 +310,6 @@ struct WaterChartSpeedView: View {
                         .onChanged { value in
                             switch value {
                             case .first(true):
-                                // Store current selection before sync mode
                                 previousSelectedDataPoint = selectedDataPoint
                                 break
                             case .second(true, let drag?):
@@ -246,7 +323,6 @@ struct WaterChartSpeedView: View {
                         }
                         .onEnded { _ in
                             syncedSelection = nil
-                            // Restore previous selection after sync ends
                             selectedDataPoint = previousSelectedDataPoint
                             lollipopVisible = previousSelectedDataPoint != nil
                         }
@@ -282,7 +358,7 @@ struct WaterChartSpeedView: View {
                         }
                         
                         Circle()
-                            .fill(Color.teal) // Keep original color even in sync mode
+                            .fill(Color.teal)
                             .frame(width: 16, height: 16)
                             .position(x: xPos, y: yPos)
                             .opacity(lollipopVisible ? 1 : 0)
@@ -299,7 +375,7 @@ struct WaterChartSpeedView: View {
                         .padding(.vertical, 4)
                         .background(RoundedRectangle(cornerRadius: 8).fill(Color.teal))
                         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.teal, lineWidth: 1))
-                        .position(x: xPos, y: yPos - 30)
+                        .position(x: xPos, y: plotRect.minY + 22)
                         .opacity(lollipopVisible ? 1 : 0)
                         .onTapGesture {
                             selectedDataPoint = nil
@@ -323,7 +399,6 @@ struct WaterChartPowerView: View {
         let voltage: Double
     }
     
-    @State private var data: [DataPoint]
     @State private var selectedDataPoint: DataPoint? = nil
     @State private var lollipopVisible: Bool = true
     @State private var previousSelectedDataPoint: DataPoint? = nil
@@ -333,16 +408,37 @@ struct WaterChartPowerView: View {
     let domain: ClosedRange<Date>?
     let timeRange: WaterChartTimeRange
     
-    // Computed property to determine if we're showing sync mode
+    let dataCoordinator: WaterChartDataCoordinator
+    
+    private var data: [DataPoint] {
+        dataCoordinator.powerData
+    }
+    
+    private var visibleData: [DataPoint] {
+        let now = Date()
+        let minTimeBase = Calendar.current.date(byAdding: .minute, value: -timeRange.minutes + 1, to: now)!
+        var filtered = data.filter { $0.time >= minTimeBase && $0.time <= now }
+        if let first = filtered.first, first.time > minTimeBase {
+            let synthesized = DataPoint(time: minTimeBase, voltage: first.voltage)
+            filtered.insert(synthesized, at: 0)
+        }
+        let lastTime = filtered.last?.time ?? now
+        if now.timeIntervalSince(lastTime) >= 60 {
+            let synthesized = DataPoint(time: now, voltage: filtered.last?.voltage ?? 0)
+            filtered.append(synthesized)
+        }
+        return filtered
+    }
+    
     private var showingSync: Bool {
         syncedSelection != nil
     }
     
-    init(domain: ClosedRange<Date>? = nil, timeRange: WaterChartTimeRange, syncedSelection: Binding<Date?>) {
-        self._data = State(initialValue: Self.generateData())
+    init(domain: ClosedRange<Date>? = nil, timeRange: WaterChartTimeRange, syncedSelection: Binding<Date?>, dataCoordinator: WaterChartDataCoordinator) {
         self.domain = domain
         self.timeRange = timeRange
         self._syncedSelection = syncedSelection
+        self.dataCoordinator = dataCoordinator
     }
     
     static func generateData() -> [DataPoint] {
@@ -354,44 +450,53 @@ struct WaterChartPowerView: View {
         var points = [DataPoint]()
         var currentTime = startTime
         var minuteIndex = 0
-        while currentTime <= now {
+        while currentTime < now {
             if currentTime < dipStart {
-                // ~300V with slight random variation
                 let voltage = 290 + Double.random(in: 0...20)
                 points.append(DataPoint(time: currentTime, voltage: voltage))
             } else {
-                // 650V ±10V variation
                 let voltage = 640 + Double.random(in: 0...20)
                 points.append(DataPoint(time: currentTime, voltage: voltage))
             }
             currentTime = calendar.date(byAdding: .minute, value: 1, to: currentTime)!
             minuteIndex += 1
         }
+        if now < dipStart {
+            let voltage = 290 + Double.random(in: 0...20)
+            points.append(DataPoint(time: now, voltage: voltage))
+        } else {
+            let voltage = 640 + Double.random(in: 0...20)
+            points.append(DataPoint(time: now, voltage: voltage))
+        }
         return points
     }
     
     var body: some View {
         let now = Date()
-        let minTime = Calendar.current.date(byAdding: .minute, value: -timeRange.minutes + 1, to: now)!
-        let visibleData = data.filter { $0.time >= minTime && $0.time <= now }
-        let visibleDomain = minTime...now
+        let lastTime = visibleData.last?.time ?? now
+        let shouldShowSynthetic = now.timeIntervalSince(lastTime) >= 60
+        let effectiveNow = shouldShowSynthetic ? now : lastTime
+        let minTime = Calendar.current.date(byAdding: .minute, value: -timeRange.minutes + 1, to: effectiveNow)!
+        let fullData = visibleData
         
         let stride: Int = {
             switch timeRange {
             case .thirtyMin: return 1
-            case .oneHour: return 2
-            case .twoHour: return 4
-            case .threeHour: return 6
+            case .oneHour: return 4
+            case .twoHour: return 8
+            case .threeHour: return 12
             }
         }()
-        let sampledData = visibleData.enumerated().compactMap { idx, dp in idx % stride == 0 ? dp : nil }
+        let sampledData = fullData.enumerated().compactMap { idx, dp in idx % stride == 0 ? dp : nil }
+        
+        let visibleDomain = minTime...effectiveNow
         
         let xAxisStride: Int = {
             switch timeRange {
-            case .thirtyMin: return 6
-            case .oneHour: return 12
-            case .twoHour: return 18
-            case .threeHour: return 24
+            case .thirtyMin: return 5
+            case .oneHour: return 15
+            case .twoHour: return 30
+            case .threeHour: return 60
             }
         }()
         
@@ -404,24 +509,40 @@ struct WaterChartPowerView: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
-            Chart(sampledData) { point in
-                LineMark(
-                    x: .value("Time", point.time),
-                    y: .value("V", point.voltage)
-                )
-                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.brown)
-                .lineStyle(StrokeStyle(lineWidth: 2))
-                PointMark(
-                    x: .value("Time", point.time),
-                    y: .value("V", point.voltage)
-                )
-                .symbol(.square)
-                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.brown)
+            Chart {
+                ForEach(fullData) { point in
+                    LineMark(
+                        x: .value("Time", point.time),
+                        y: .value("V", point.voltage)
+                    )
+                    .interpolationMethod(.linear)
+                    .foregroundStyle(showingSync ? Color(.systemGray3) : Color.brown)
+                    .lineStyle(StrokeStyle(lineWidth: 2))
+                }
+                ForEach(sampledData) { point in
+                    PointMark(
+                        x: .value("Time", point.time),
+                        y: .value("V", point.voltage)
+                    )
+                    .symbol(.square)
+                    .foregroundStyle(showingSync ? Color(.systemGray3) : Color.brown)
+                }
                 
-                // Thresholds
+                RuleMark(x: .value("Now", effectiveNow))
+                    .foregroundStyle(Color.brown)
+                    .lineStyle(StrokeStyle(lineWidth: 2))
+                    .annotation(position: .bottom, alignment: .trailing) {
+                        Text("NOW")
+                            .font(.caption2)
+                            .foregroundColor(.brown)
+                            .padding(.horizontal, 3)
+                            .padding(.vertical, 1)
+                            .background(.thinMaterial)
+                            .clipShape(Capsule())
+                    }
+                
                 let highThreshold = 360.0
 
-                // High threshold line and zone
                 RuleMark(y: .value("highThreshold", highThreshold))
                     .foregroundStyle(.gray)
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [6, 4]))
@@ -449,7 +570,6 @@ struct WaterChartPowerView: View {
                                 if let closest = sampledData.min(by: {
                                     abs($0.time.timeIntervalSince(date)) < abs($1.time.timeIntervalSince(date))
                                 }) {
-                                    // Store previous selection before updating
                                     if selectedDataPoint == nil {
                                         previousSelectedDataPoint = nil
                                     }
@@ -463,7 +583,6 @@ struct WaterChartPowerView: View {
                         .onChanged { value in
                             switch value {
                             case .first(true):
-                                // Store current selection before sync mode
                                 previousSelectedDataPoint = selectedDataPoint
                                 break
                             case .second(true, let drag?):
@@ -477,7 +596,6 @@ struct WaterChartPowerView: View {
                         }
                         .onEnded { _ in
                             syncedSelection = nil
-                            // Restore previous selection after sync ends
                             selectedDataPoint = previousSelectedDataPoint
                             lollipopVisible = previousSelectedDataPoint != nil
                         }
@@ -513,7 +631,7 @@ struct WaterChartPowerView: View {
                         }
                         
                         Rectangle()
-                            .fill(Color.brown) // Keep original color even in sync mode
+                            .fill(Color.brown)
                             .frame(width: 14, height: 14)
                             .position(x: xPos, y: yPos)
                             .opacity(lollipopVisible ? 1 : 0)
@@ -530,7 +648,7 @@ struct WaterChartPowerView: View {
                         .padding(.vertical, 4)
                         .background(RoundedRectangle(cornerRadius: 8).fill(Color.brown))
                         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.brown, lineWidth: 1))
-                        .position(x: xPos, y: yPos - 30)
+                        .position(x: xPos, y: plotRect.minY + 22)
                         .opacity(lollipopVisible ? 1 : 0)
                         .onTapGesture {
                             selectedDataPoint = nil
@@ -554,7 +672,6 @@ struct WaterChartOutputView: View {
         let liters: Double
     }
     
-    @State private var data: [DataPoint]
     @State private var selectedDataPoint: DataPoint? = nil
     @State private var lollipopVisible: Bool = true
     @State private var previousSelectedDataPoint: DataPoint? = nil
@@ -564,16 +681,37 @@ struct WaterChartOutputView: View {
     let domain: ClosedRange<Date>?
     let timeRange: WaterChartTimeRange
     
-    // Computed property to determine if we're showing sync mode
+    let dataCoordinator: WaterChartDataCoordinator
+    
+    private var data: [DataPoint] {
+        dataCoordinator.outputData
+    }
+    
+    private var visibleData: [DataPoint] {
+        let now = Date()
+        let minTimeBase = Calendar.current.date(byAdding: .minute, value: -timeRange.minutes + 1, to: now)!
+        var filtered = data.filter { $0.time >= minTimeBase && $0.time <= now }
+        if let first = filtered.first, first.time > minTimeBase {
+            let synthesized = DataPoint(time: minTimeBase, liters: first.liters)
+            filtered.insert(synthesized, at: 0)
+        }
+        let lastTime = filtered.last?.time ?? now
+        if now.timeIntervalSince(lastTime) >= 60 {
+            let synthesized = DataPoint(time: now, liters: filtered.last?.liters ?? 0)
+            filtered.append(synthesized)
+        }
+        return filtered
+    }
+    
     private var showingSync: Bool {
         syncedSelection != nil
     }
     
-    init(domain: ClosedRange<Date>? = nil, timeRange: WaterChartTimeRange, syncedSelection: Binding<Date?>) {
-        self._data = State(initialValue: Self.generateData())
+    init(domain: ClosedRange<Date>? = nil, timeRange: WaterChartTimeRange, syncedSelection: Binding<Date?>, dataCoordinator: WaterChartDataCoordinator) {
         self.domain = domain
         self.timeRange = timeRange
         self._syncedSelection = syncedSelection
+        self.dataCoordinator = dataCoordinator
     }
     
     static func generateData() -> [DataPoint] {
@@ -585,44 +723,53 @@ struct WaterChartOutputView: View {
         var points = [DataPoint]()
         var currentTime = startTime
         var minuteIndex = 0
-        while currentTime <= now {
+        while currentTime < now {
             if currentTime < dipStart {
-                // 8L ±0.2L variation
                 let liters = 7.8 + Double.random(in: 0...0.4)
                 points.append(DataPoint(time: currentTime, liters: liters))
             } else {
-                // drops to 0 intermittently (alternate between 0 and 0.3L)
                 let liters = (minuteIndex % 2 == 0) ? 0.0 : 0.3
                 points.append(DataPoint(time: currentTime, liters: liters))
             }
             currentTime = calendar.date(byAdding: .minute, value: 1, to: currentTime)!
             minuteIndex += 1
         }
+        if now < dipStart {
+            let liters = 7.8 + Double.random(in: 0...0.4)
+            points.append(DataPoint(time: now, liters: liters))
+        } else {
+            let liters = (minuteIndex % 2 == 0) ? 0.0 : 0.3
+            points.append(DataPoint(time: now, liters: liters))
+        }
         return points
     }
     
     var body: some View {
         let now = Date()
-        let minTime = Calendar.current.date(byAdding: .minute, value: -timeRange.minutes + 1, to: now)!
-        let visibleData = data.filter { $0.time >= minTime && $0.time <= now }
-        let visibleDomain = minTime...now
+        let lastTime = visibleData.last?.time ?? now
+        let shouldShowSynthetic = now.timeIntervalSince(lastTime) >= 60
+        let effectiveNow = shouldShowSynthetic ? now : lastTime
+        let minTime = Calendar.current.date(byAdding: .minute, value: -timeRange.minutes + 1, to: effectiveNow)!
+        let fullData = visibleData
         
         let stride: Int = {
             switch timeRange {
             case .thirtyMin: return 1
-            case .oneHour: return 2
-            case .twoHour: return 4
-            case .threeHour: return 6
+            case .oneHour: return 4
+            case .twoHour: return 8
+            case .threeHour: return 12
             }
         }()
-        let sampledData = visibleData.enumerated().compactMap { idx, dp in idx % stride == 0 ? dp : nil }
+        let sampledData = fullData.enumerated().compactMap { idx, dp in idx % stride == 0 ? dp : nil }
+        
+        let visibleDomain = minTime...effectiveNow
         
         let xAxisStride: Int = {
             switch timeRange {
-            case .thirtyMin: return 6
-            case .oneHour: return 12
-            case .twoHour: return 18
-            case .threeHour: return 24
+            case .thirtyMin: return 5
+            case .oneHour: return 15
+            case .twoHour: return 30
+            case .threeHour: return 60
             }
         }()
         
@@ -635,24 +782,40 @@ struct WaterChartOutputView: View {
                     .font(.subheadline)
                     .foregroundColor(.secondary)
             }
-            Chart(sampledData) { point in
-                LineMark(
-                    x: .value("Time", point.time),
-                    y: .value("L", point.liters)
-                )
-                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.blue)
-                .lineStyle(StrokeStyle(lineWidth: 2))
-                PointMark(
-                    x: .value("Time", point.time),
-                    y: .value("L", point.liters)
-                )
-                .symbol(.triangle)
-                .foregroundStyle(showingSync ? Color(.systemGray3) : Color.blue)
+            Chart {
+                ForEach(fullData) { point in
+                    LineMark(
+                        x: .value("Time", point.time),
+                        y: .value("L", point.liters)
+                    )
+                    .interpolationMethod(.linear)
+                    .foregroundStyle(showingSync ? Color(.systemGray3) : Color.blue)
+                    .lineStyle(StrokeStyle(lineWidth: 2))
+                }
+                ForEach(sampledData) { point in
+                    PointMark(
+                        x: .value("Time", point.time),
+                        y: .value("L", point.liters)
+                    )
+                    .symbol(.triangle)
+                    .foregroundStyle(showingSync ? Color(.systemGray3) : Color.blue)
+                }
                 
-                // Thresholds
+                RuleMark(x: .value("Now", effectiveNow))
+                    .foregroundStyle(Color.blue)
+                    .lineStyle(StrokeStyle(lineWidth: 2))
+                    .annotation(position: .bottom, alignment: .trailing) {
+                        Text("NOW")
+                            .font(.caption2)
+                            .foregroundColor(.blue)
+                            .padding(.horizontal, 3)
+                            .padding(.vertical, 1)
+                            .background(.thinMaterial)
+                            .clipShape(Capsule())
+                    }
+                
                 let lowThreshold = 4.0
 
-                // Low threshold line and zone
                 RuleMark(y: .value("lowThreshold", lowThreshold))
                     .foregroundStyle(.gray)
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [6, 4]))
@@ -680,7 +843,6 @@ struct WaterChartOutputView: View {
                                 if let closest = sampledData.min(by: {
                                     abs($0.time.timeIntervalSince(date)) < abs($1.time.timeIntervalSince(date))
                                 }) {
-                                    // Store previous selection before updating
                                     if selectedDataPoint == nil {
                                         previousSelectedDataPoint = nil
                                     }
@@ -694,7 +856,6 @@ struct WaterChartOutputView: View {
                         .onChanged { value in
                             switch value {
                             case .first(true):
-                                // Store current selection before sync mode
                                 previousSelectedDataPoint = selectedDataPoint
                                 break
                             case .second(true, let drag?):
@@ -708,7 +869,6 @@ struct WaterChartOutputView: View {
                         }
                         .onEnded { _ in
                             syncedSelection = nil
-                            // Restore previous selection after sync ends
                             selectedDataPoint = previousSelectedDataPoint
                             lollipopVisible = previousSelectedDataPoint != nil
                         }
@@ -744,7 +904,7 @@ struct WaterChartOutputView: View {
                         }
                         
                         Triangle()
-                            .fill(Color.blue) // Keep original color even in sync mode
+                            .fill(Color.blue)
                             .frame(width: 18, height: 18)
                             .position(x: xPos, y: yPos)
                             .opacity(lollipopVisible ? 1 : 0)
@@ -761,7 +921,7 @@ struct WaterChartOutputView: View {
                         .padding(.vertical, 4)
                         .background(RoundedRectangle(cornerRadius: 8).fill(Color.blue))
                         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.blue, lineWidth: 1))
-                        .position(x: xPos, y: yPos - 30)
+                        .position(x: xPos, y: plotRect.minY + 22)
                         .opacity(lollipopVisible ? 1 : 0)
                         .onTapGesture {
                             selectedDataPoint = nil
