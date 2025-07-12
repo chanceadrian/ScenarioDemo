@@ -69,6 +69,8 @@ struct WaterChartView: View {
     let selectedIndices: Set<Int>
     
     @StateObject private var dataCoordinator = WaterChartDataCoordinator()
+    
+    @State private var chartVisible: Bool = true
 
     // Compute shared time domain for stacking alignment
     private var timeDomain: ClosedRange<Date> {
@@ -86,8 +88,14 @@ struct WaterChartView: View {
             Picker("Time Range", selection: Binding(
                 get: { selectedTimeRange },
                 set: { newValue in
-                    withAnimation(.easeInOut(duration: 0.45)) {
-                        selectedTimeRange = newValue
+                    withAnimation(.easeInOut(duration: 0.37)) {
+                        chartVisible = false
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.37) {
+                        selectedTimeRange = newValue // update while hidden
+                        withAnimation(.easeInOut(duration: 0.37)) {
+                            chartVisible = true
+                        }
                     }
                 })) {
                     ForEach(WaterChartTimeRange.allCases) { range in
@@ -98,20 +106,18 @@ struct WaterChartView: View {
             
             VStack(spacing: 20) {
                 if selectedIndices.contains(0) {
-                    WaterChartSpeedView(domain: timeDomain, timeRange: selectedTimeRange, syncedSelection: $syncedSelection, dataCoordinator: dataCoordinator)
-                        .transition(.opacity)
+                    WaterChartSpeedView(domain: timeDomain, timeRange: selectedTimeRange, syncedSelection: $syncedSelection, dataCoordinator: dataCoordinator, chartVisible: chartVisible)
                 }
                 if selectedIndices.contains(1) {
-                    WaterChartPowerView(domain: timeDomain, timeRange: selectedTimeRange, syncedSelection: $syncedSelection, dataCoordinator: dataCoordinator)
-                        .transition(.opacity)
+                    WaterChartPowerView(domain: timeDomain, timeRange: selectedTimeRange, syncedSelection: $syncedSelection, dataCoordinator: dataCoordinator, chartVisible: chartVisible)
                 }
                 if selectedIndices.contains(2) {
-                    WaterChartOutputView(domain: timeDomain, timeRange: selectedTimeRange, syncedSelection: $syncedSelection, dataCoordinator: dataCoordinator)
-                        .transition(.opacity)
+                    WaterChartOutputView(domain: timeDomain, timeRange: selectedTimeRange, syncedSelection: $syncedSelection, dataCoordinator: dataCoordinator, chartVisible: chartVisible)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .animation(.spring(response: 0.38, dampingFraction: 0.74), value: selectedIndices)
+            .opacity(chartVisible ? 1 : 0)
+            .animation(.easeInOut(duration: 0.36), value: chartVisible)
         }
     }
 }
@@ -134,6 +140,8 @@ struct WaterChartSpeedView: View {
     let timeRange: WaterChartTimeRange
     
     let dataCoordinator: WaterChartDataCoordinator
+    
+    let chartVisible: Bool
     
     private var data: [DataPoint] {
         dataCoordinator.speedData
@@ -159,11 +167,12 @@ struct WaterChartSpeedView: View {
         syncedSelection != nil
     }
     
-    init(domain: ClosedRange<Date>? = nil, timeRange: WaterChartTimeRange, syncedSelection: Binding<Date?>, dataCoordinator: WaterChartDataCoordinator) {
+    init(domain: ClosedRange<Date>? = nil, timeRange: WaterChartTimeRange, syncedSelection: Binding<Date?>, dataCoordinator: WaterChartDataCoordinator, chartVisible: Bool) {
         self.domain = domain
         self.timeRange = timeRange
         self._syncedSelection = syncedSelection
         self.dataCoordinator = dataCoordinator
+        self.chartVisible = chartVisible
     }
     
     static func generateData() -> [DataPoint] {
@@ -264,7 +273,7 @@ struct WaterChartSpeedView: View {
                             .foregroundColor(.secondary)
                             .padding(.horizontal, 3)
                             .padding(.vertical, 1)
-//                            .background(Capsule().fill(Color.secondary.opacity(0.2)))
+                            .background(Capsule().fill(Color.secondary.opacity(0.2)))
                     }
                 
                 let lowThreshold = 2100.0
@@ -348,7 +357,7 @@ struct WaterChartSpeedView: View {
                        let plotFrameAnchor = proxy.plotFrame {
                         let plotRect = geo[plotFrameAnchor]
                         
-                        if lollipopVisible {
+                        if lollipopVisible && chartVisible {
                             Path { path in
                                 path.move(to: CGPoint(x: xPos, y: plotRect.minY))
                                 path.addLine(to: CGPoint(x: xPos, y: plotRect.maxY))
@@ -360,7 +369,7 @@ struct WaterChartSpeedView: View {
                             .fill(Color.teal)
                             .frame(width: 16, height: 16)
                             .position(x: xPos, y: yPos)
-                            .opacity(lollipopVisible ? 1 : 0)
+                            .opacity(lollipopVisible && chartVisible ? 1 : 0)
                         
                         VStack(spacing: 2) {
                             Text(closest.time.formatted(date: .omitted, time: .shortened))
@@ -375,7 +384,7 @@ struct WaterChartSpeedView: View {
                         .background(RoundedRectangle(cornerRadius: 8).fill(Color.teal))
                         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.teal, lineWidth: 1))
                         .position(x: xPos, y: plotRect.minY + 22)
-                        .opacity(lollipopVisible ? 1 : 0)
+                        .opacity(lollipopVisible && chartVisible ? 1 : 0)
                         .onTapGesture {
                             selectedDataPoint = nil
                             withAnimation(.easeInOut(duration: 0.42)) {
@@ -409,6 +418,8 @@ struct WaterChartPowerView: View {
     
     let dataCoordinator: WaterChartDataCoordinator
     
+    let chartVisible: Bool
+    
     private var data: [DataPoint] {
         dataCoordinator.powerData
     }
@@ -433,11 +444,12 @@ struct WaterChartPowerView: View {
         syncedSelection != nil
     }
     
-    init(domain: ClosedRange<Date>? = nil, timeRange: WaterChartTimeRange, syncedSelection: Binding<Date?>, dataCoordinator: WaterChartDataCoordinator) {
+    init(domain: ClosedRange<Date>? = nil, timeRange: WaterChartTimeRange, syncedSelection: Binding<Date?>, dataCoordinator: WaterChartDataCoordinator, chartVisible: Bool) {
         self.domain = domain
         self.timeRange = timeRange
         self._syncedSelection = syncedSelection
         self.dataCoordinator = dataCoordinator
+        self.chartVisible = chartVisible
     }
     
     static func generateData() -> [DataPoint] {
@@ -620,7 +632,7 @@ struct WaterChartPowerView: View {
                        let plotFrameAnchor = proxy.plotFrame {
                         let plotRect = geo[plotFrameAnchor]
                         
-                        if lollipopVisible {
+                        if lollipopVisible && chartVisible {
                             Path { path in
                                 path.move(to: CGPoint(x: xPos, y: plotRect.minY))
                                 path.addLine(to: CGPoint(x: xPos, y: plotRect.maxY))
@@ -632,7 +644,7 @@ struct WaterChartPowerView: View {
                             .fill(Color.brown)
                             .frame(width: 14, height: 14)
                             .position(x: xPos, y: yPos)
-                            .opacity(lollipopVisible ? 1 : 0)
+                            .opacity(lollipopVisible && chartVisible ? 1 : 0)
                         
                         VStack(spacing: 2) {
                             Text(closest.time.formatted(date: .omitted, time: .shortened))
@@ -647,7 +659,7 @@ struct WaterChartPowerView: View {
                         .background(RoundedRectangle(cornerRadius: 8).fill(Color.brown))
                         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.brown, lineWidth: 1))
                         .position(x: xPos, y: plotRect.minY + 22)
-                        .opacity(lollipopVisible ? 1 : 0)
+                        .opacity(lollipopVisible && chartVisible ? 1 : 0)
                         .onTapGesture {
                             selectedDataPoint = nil
                             withAnimation(.easeInOut(duration: 0.42)) {
@@ -681,6 +693,8 @@ struct WaterChartOutputView: View {
     
     let dataCoordinator: WaterChartDataCoordinator
     
+    let chartVisible: Bool
+    
     private var data: [DataPoint] {
         dataCoordinator.outputData
     }
@@ -705,11 +719,12 @@ struct WaterChartOutputView: View {
         syncedSelection != nil
     }
     
-    init(domain: ClosedRange<Date>? = nil, timeRange: WaterChartTimeRange, syncedSelection: Binding<Date?>, dataCoordinator: WaterChartDataCoordinator) {
+    init(domain: ClosedRange<Date>? = nil, timeRange: WaterChartTimeRange, syncedSelection: Binding<Date?>, dataCoordinator: WaterChartDataCoordinator, chartVisible: Bool) {
         self.domain = domain
         self.timeRange = timeRange
         self._syncedSelection = syncedSelection
         self.dataCoordinator = dataCoordinator
+        self.chartVisible = chartVisible
     }
     
     static func generateData() -> [DataPoint] {
@@ -892,7 +907,7 @@ struct WaterChartOutputView: View {
                        let plotFrameAnchor = proxy.plotFrame {
                         let plotRect = geo[plotFrameAnchor]
                         
-                        if lollipopVisible {
+                        if lollipopVisible && chartVisible {
                             Path { path in
                                 path.move(to: CGPoint(x: xPos, y: plotRect.minY))
                                 path.addLine(to: CGPoint(x: xPos, y: plotRect.maxY))
@@ -904,7 +919,7 @@ struct WaterChartOutputView: View {
                             .fill(Color.blue)
                             .frame(width: 18, height: 18)
                             .position(x: xPos, y: yPos)
-                            .opacity(lollipopVisible ? 1 : 0)
+                            .opacity(lollipopVisible && chartVisible ? 1 : 0)
                         
                         VStack(spacing: 2) {
                             Text(closest.time.formatted(date: .omitted, time: .shortened))
@@ -919,7 +934,7 @@ struct WaterChartOutputView: View {
                         .background(RoundedRectangle(cornerRadius: 8).fill(Color.blue))
                         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.blue, lineWidth: 1))
                         .position(x: xPos, y: plotRect.minY + 22)
-                        .opacity(lollipopVisible ? 1 : 0)
+                        .opacity(lollipopVisible && chartVisible ? 1 : 0)
                         .onTapGesture {
                             selectedDataPoint = nil
                             withAnimation(.easeInOut(duration: 0.42)) {
@@ -948,4 +963,3 @@ struct Triangle: Shape {
 #Preview {
     WaterChartView(selectedIndices: Set([0, 1, 2]))
 }
-

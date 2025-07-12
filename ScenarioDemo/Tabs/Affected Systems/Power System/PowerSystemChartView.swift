@@ -20,8 +20,8 @@ struct PowerSystemChartView: View {
     
     @State private var lollipopTime: Date? = nil
     @State private var selectedTimeRange: WaterChartTimeRange = .thirtyMin
-    @State private var chartVisible: Bool = false
     @State private var now = Date()
+    @State private var chartVisible: Bool = true
     
     private var visibleDomain: ClosedRange<Date> {
         let minTime = Calendar.current.date(byAdding: .minute, value: -selectedTimeRange.minutes + 1, to: now)!
@@ -162,8 +162,10 @@ struct PowerSystemChartView: View {
             Picker("Time Range", selection: Binding(
                 get: { selectedTimeRange },
                 set: { newValue in
-                    withAnimation(.easeInOut(duration: 0.45)) {
+                    withAnimation(.easeInOut(duration: 0.36)) { chartVisible = false }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.37) {
                         selectedTimeRange = newValue
+                        withAnimation(.easeInOut(duration: 0.36)) { chartVisible = true }
                     }
                 })) {
                     ForEach(WaterChartTimeRange.allCases) { range in
@@ -192,16 +194,13 @@ struct PowerSystemChartView: View {
                             )
                             .foregroundStyle(busColor(busNumber))
                             .lineStyle(StrokeStyle(lineWidth: 2))
-                            .opacity(chartVisible ? 1 : 0)
-                        }
-                        ForEach(sampledData.filter { $0.busNumber == busNumber }) { point in
+                            
                             PointMark(
                                 x: .value("Time", point.time),
                                 y: .value("Voltage", point.voltage)
                             )
                             .symbol(busNumber == 1 ? .circle : busNumber == 2 ? .square : .triangle)
                             .foregroundStyle(busColor(busNumber))
-                            .opacity(chartVisible ? 1 : 0)
                         }
                     }
                 }
@@ -213,7 +212,6 @@ struct PowerSystemChartView: View {
                     .annotation(position: .top, alignment: .leading) {
                         Text("Bus Capacity").foregroundColor(.orange).font(.footnote)
                     }
-                    .opacity(chartVisible ? 1 : 0)
 
                 RuleMark(x: .value("Now", selectedTimeRange == .thirtyMin ? now : latestSampleTime))
                     .foregroundStyle(Color.secondary)
@@ -227,6 +225,8 @@ struct PowerSystemChartView: View {
 //                            .background(Capsule().fill(Color.secondary.opacity(0.2)))
                     }
             }
+            .opacity(chartVisible ? 1 : 0)
+            .animation(.easeInOut(duration: 0.36), value: chartVisible)
             .chartXScale(domain: visibleDomain)
             .chartYScale(domain: 50...300)
             .chartYAxis { AxisMarks(preset: .inset) }
@@ -240,29 +240,13 @@ struct PowerSystemChartView: View {
                     }
                 }
             }
-            .animation(.easeInOut(duration: 0.45), value: chartVisible)
-            .onChange(of: selectedTimeRange) { _, _ in
-                chartVisible = false
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                    withAnimation(.easeInOut(duration: 0.45)) {
-                        chartVisible = true
-                    }
-                }
-            }
             .onAppear {
-                chartVisible = false
                 timer?.invalidate()
                 timer = Timer.scheduledTimer(withTimeInterval: 1.0/30.0, repeats: true) { _ in
                     now = Date()
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-                    withAnimation(.easeInOut(duration: 0.45)) {
-                        chartVisible = true
-                    }
-                }
             }
             .onDisappear {
-                chartVisible = false
                 timer?.invalidate()
                 timer = nil
             }
@@ -374,3 +358,4 @@ struct PowerSystemChartView: View {
             .padding()
     }
 }
+
