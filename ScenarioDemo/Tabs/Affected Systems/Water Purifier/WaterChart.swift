@@ -71,6 +71,20 @@ struct WaterChartView: View {
     @StateObject private var dataCoordinator = WaterChartDataCoordinator()
     
     @State private var chartVisible: Bool = true
+    
+    @State private var displayedIndices: Set<Int>
+    
+    @State private var selectedTimeRange: WaterChartTimeRange = .thirtyMin
+    @State private var pendingTimeRange: WaterChartTimeRange? = nil
+    
+    private var currentTimeRangeForDisplay: WaterChartTimeRange {
+        pendingTimeRange ?? selectedTimeRange
+    }
+    
+    init(selectedIndices: Set<Int>) {
+        self.selectedIndices = selectedIndices
+        _displayedIndices = State(initialValue: selectedIndices)
+    }
 
     // Compute shared time domain for stacking alignment
     private var timeDomain: ClosedRange<Date> {
@@ -80,20 +94,23 @@ struct WaterChartView: View {
         return computePaddedTimeDomain([speedTimes, powerTimes, outputTimes])
     }
     
-    @State private var selectedTimeRange: WaterChartTimeRange = .thirtyMin
     @State private var syncedSelection: Date? = nil
     
     var body: some View {
         VStack(spacing: 12) {
             Picker("Time Range", selection: Binding(
-                get: { selectedTimeRange },
+                get: { currentTimeRangeForDisplay },
                 set: { newValue in
-                    withAnimation(.easeInOut(duration: 0.37)) {
+                    // Prevent rapid taps while animating
+                    guard pendingTimeRange == nil else { return }
+                    pendingTimeRange = newValue
+                    withAnimation(.easeInOut(duration: 0.65)) {
                         chartVisible = false
                     }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.37) {
-                        selectedTimeRange = newValue // update while hidden
-                        withAnimation(.easeInOut(duration: 0.37)) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.65) {
+                        selectedTimeRange = newValue
+                        pendingTimeRange = nil
+                        withAnimation(.easeInOut(duration: 0.65)) {
                             chartVisible = true
                         }
                     }
@@ -105,19 +122,29 @@ struct WaterChartView: View {
                 .pickerStyle(.segmented)
             
             VStack(spacing: 20) {
-                if selectedIndices.contains(0) {
+                if displayedIndices.contains(0) {
                     WaterChartSpeedView(domain: timeDomain, timeRange: selectedTimeRange, syncedSelection: $syncedSelection, dataCoordinator: dataCoordinator, chartVisible: chartVisible)
                 }
-                if selectedIndices.contains(1) {
+                if displayedIndices.contains(1) {
                     WaterChartPowerView(domain: timeDomain, timeRange: selectedTimeRange, syncedSelection: $syncedSelection, dataCoordinator: dataCoordinator, chartVisible: chartVisible)
                 }
-                if selectedIndices.contains(2) {
+                if displayedIndices.contains(2) {
                     WaterChartOutputView(domain: timeDomain, timeRange: selectedTimeRange, syncedSelection: $syncedSelection, dataCoordinator: dataCoordinator, chartVisible: chartVisible)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .opacity(chartVisible ? 1 : 0)
-            .animation(.easeInOut(duration: 0.36), value: chartVisible)
+        }
+        .onChange(of: selectedIndices) { newValue in
+            withAnimation(.easeInOut(duration: 0.65)) {
+                chartVisible = false
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.65) {
+                displayedIndices = newValue
+                withAnimation(.easeInOut(duration: 0.65)) {
+                    chartVisible = true
+                }
+            }
         }
     }
 }
@@ -548,7 +575,6 @@ struct WaterChartPowerView: View {
                             .foregroundColor(.secondary)
                             .padding(.horizontal, 3)
                             .padding(.vertical, 1)
-//                            .background(Capsule().fill(Color.secondary.opacity(0.2)))
                     }
                 
                 let highThreshold = 360.0
@@ -823,7 +849,6 @@ struct WaterChartOutputView: View {
                             .foregroundColor(.secondary)
                             .padding(.horizontal, 3)
                             .padding(.vertical, 1)
-//                            .background(Capsule().fill(Color.secondary.opacity(0.2)))
                     }
                 
                 let lowThreshold = 4.0
