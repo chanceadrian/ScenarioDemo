@@ -87,13 +87,19 @@ struct PowerSystemChartView: View {
         let minTime = Calendar.current.date(byAdding: .minute, value: -selectedTimeRange.minutes + 1, to: now)!
         var visibleData = allData.filter { $0.time >= minTime && $0.time <= now }
         
+        // If there are no real points in the window at all (e.g. on launch), return no data so chart is empty
+        let anyRealPoints = [1, 2, 3].contains { busNumber in
+            selectedIndices.contains(busNumber - 1) && visibleData.contains { $0.busNumber == busNumber }
+        }
+        if !anyRealPoints { return [] }
+        
         for busNumber in [1, 2, 3] {
-            if selectedIndices.contains(busNumber - 1) {
-                if let latest = visibleData.filter({ $0.busNumber == busNumber }).max(by: { $0.time < $1.time }) {
-                    if latest.time < now {
-                        visibleData.append(VoltageDataPoint(time: now, voltage: latest.voltage, isPredicted: false, busNumber: busNumber))
-                    }
-                }
+            guard selectedIndices.contains(busNumber - 1) else { continue }
+            let busDataAll = allData.filter { $0.busNumber == busNumber && $0.time <= now }
+            // Right edge (now)
+            if !visibleData.contains(where: { $0.busNumber == busNumber && $0.time == now }),
+               let rightMost = busDataAll.last(where: { $0.time <= now }) {
+                visibleData.append(VoltageDataPoint(time: now, voltage: rightMost.voltage, isPredicted: false, busNumber: busNumber))
             }
         }
         return visibleData
@@ -103,6 +109,28 @@ struct PowerSystemChartView: View {
         if date < visibleDomain.lowerBound { return visibleDomain.lowerBound }
         if date > visibleDomain.upperBound { return visibleDomain.upperBound }
         return date
+    }
+    
+    private func makeSampledData(visibleData: [VoltageDataPoint], stride: Int) -> [VoltageDataPoint] {
+        let groupedByTime = Dictionary(grouping: visibleData) { $0.time }
+        let sampledTimes = groupedByTime.keys.sorted().enumerated().compactMap { idx, time in
+            idx % stride == 0 ? time : nil
+        }
+        var sampledData = sampledTimes.flatMap { time in
+            groupedByTime[time] ?? []
+        }
+        if selectedTimeRange == .thirtyMin {
+            for busNumber in [1, 2, 3] {
+                guard selectedIndices.contains(busNumber - 1) else { continue }
+                if !sampledData.contains(where: { $0.busNumber == busNumber && $0.time == now }) {
+                    let busDataAll = allData.filter { $0.busNumber == busNumber && $0.time <= now }
+                    if let rightMost = busDataAll.last(where: { $0.time <= now }) {
+                        sampledData.append(VoltageDataPoint(time: now, voltage: rightMost.voltage, isPredicted: false, busNumber: busNumber))
+                    }
+                }
+            }
+        }
+        return sampledData
     }
     
     var body: some View {
@@ -117,23 +145,16 @@ struct PowerSystemChartView: View {
         }()
         
         let visibleData = visibleDataWithSyntheticPoints
-        
-        // Fixed sampling logic - group by time first, then sample
-        let groupedByTime = Dictionary(grouping: visibleData) { $0.time }
-        let sampledTimes = groupedByTime.keys.sorted().enumerated().compactMap { idx, time in
-            idx % stride == 0 ? time : nil
-        }
-        let sampledData = sampledTimes.flatMap { time in
-            groupedByTime[time] ?? []
-        }
+        let sampledData = makeSampledData(visibleData: visibleData, stride: stride)
+        let latestSampleTime = sampledData.map { $0.time }.max() ?? now
         
         // Use the same x-axis stride as water purifier
         let xAxisStride: Int = {
             switch selectedTimeRange {
-            case .thirtyMin: return 3
-            case .oneHour: return 6
-            case .twoHour: return 12
-            case .threeHour: return 18
+            case .thirtyMin: return 5
+            case .oneHour: return 15
+            case .twoHour: return 30
+            case .threeHour: return 60
             }
         }()
         
@@ -194,17 +215,16 @@ struct PowerSystemChartView: View {
                     }
                     .opacity(chartVisible ? 1 : 0)
 
-                RuleMark(x: .value("Now", now))
+                RuleMark(x: .value("Now", selectedTimeRange == .thirtyMin ? now : latestSampleTime))
                     .foregroundStyle(Color.secondary)
                     .lineStyle(StrokeStyle(lineWidth: 2))
-                    .annotation(position: .top, alignment: .trailing) {
+                    .annotation(position: .bottom, alignment: .trailing) {
                         Text("NOW")
                             .font(.caption2)
                             .foregroundColor(.secondary)
                             .padding(.horizontal, 3)
                             .padding(.vertical, 1)
                             .background(Capsule().fill(Color.secondary.opacity(0.2)))
-                            .offset(x:-6,y: 25)
                     }
             }
             .chartXScale(domain: visibleDomain)
@@ -231,7 +251,8 @@ struct PowerSystemChartView: View {
             }
             .onAppear {
                 chartVisible = false
-                timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
+                timer?.invalidate()
+                timer = Timer.scheduledTimer(withTimeInterval: 1.0/30.0, repeats: true) { _ in
                     now = Date()
                 }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
@@ -353,4 +374,3 @@ struct PowerSystemChartView: View {
             .padding()
     }
 }
-

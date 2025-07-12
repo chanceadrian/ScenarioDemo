@@ -11,7 +11,7 @@ struct SummaryHeaderView: View {
 
     @State private var timer: Timer? = nil
     @State private var endDate: Date = Date().addingTimeInterval(52 * 60)
-    @State private var tick = 0
+    @State private var now: Date = Date()
 
     var body: some View {
         VStack(spacing: 16) {
@@ -20,7 +20,7 @@ struct SummaryHeaderView: View {
                 Text("Power System Failure")
                     .font(.title)
                     .fontWeight(.semibold)
-                Text("\(max(0, Int(endDate.timeIntervalSince(Date()) / 60))) minutes until Bus-3 overload, followed by loss of power supply to components and attitude control.")
+                Text("\(max(0, Int(endDate.timeIntervalSince(now) / 60))) minutes until Bus-3 overload, followed by loss of power supply to components and attitude control.")
                     .font(.title3)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 502)
@@ -54,7 +54,7 @@ struct SummaryHeaderView: View {
             endDate = Date().addingTimeInterval(52 * 60)
             timer?.invalidate()
             timer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { _ in
-                tick += 1
+                now = Date()
             }
         }
         .onDisappear {
