@@ -224,7 +224,7 @@ struct PowerSystemChartView: View {
                             .foregroundColor(.secondary)
                             .padding(.horizontal, 3)
                             .padding(.vertical, 1)
-                            .background(Capsule().fill(Color.secondary.opacity(0.2)))
+//                            .background(Capsule().fill(Color.secondary.opacity(0.2)))
                     }
             }
             .chartXScale(domain: visibleDomain)

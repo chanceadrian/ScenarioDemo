@@ -256,16 +256,15 @@ struct WaterChartSpeedView: View {
                 }
                 
                 RuleMark(x: .value("Now", effectiveNow))
-                    .foregroundStyle(Color.teal)
+                    .foregroundStyle(Color.secondary)
                     .lineStyle(StrokeStyle(lineWidth: 2))
                     .annotation(position: .bottom, alignment: .trailing) {
                         Text("NOW")
                             .font(.caption2)
-                            .foregroundColor(.teal)
+                            .foregroundColor(.secondary)
                             .padding(.horizontal, 3)
                             .padding(.vertical, 1)
-                            .background(.thinMaterial)
-                            .clipShape(Capsule())
+//                            .background(Capsule().fill(Color.secondary.opacity(0.2)))
                     }
                 
                 let lowThreshold = 2100.0
@@ -529,16 +528,15 @@ struct WaterChartPowerView: View {
                 }
                 
                 RuleMark(x: .value("Now", effectiveNow))
-                    .foregroundStyle(Color.brown)
+                    .foregroundStyle(Color.secondary)
                     .lineStyle(StrokeStyle(lineWidth: 2))
                     .annotation(position: .bottom, alignment: .trailing) {
                         Text("NOW")
                             .font(.caption2)
-                            .foregroundColor(.brown)
+                            .foregroundColor(.secondary)
                             .padding(.horizontal, 3)
                             .padding(.vertical, 1)
-                            .background(.thinMaterial)
-                            .clipShape(Capsule())
+//                            .background(Capsule().fill(Color.secondary.opacity(0.2)))
                     }
                 
                 let highThreshold = 360.0
@@ -802,16 +800,15 @@ struct WaterChartOutputView: View {
                 }
                 
                 RuleMark(x: .value("Now", effectiveNow))
-                    .foregroundStyle(Color.blue)
+                    .foregroundStyle(Color.secondary)
                     .lineStyle(StrokeStyle(lineWidth: 2))
                     .annotation(position: .bottom, alignment: .trailing) {
                         Text("NOW")
                             .font(.caption2)
-                            .foregroundColor(.blue)
+                            .foregroundColor(.secondary)
                             .padding(.horizontal, 3)
                             .padding(.vertical, 1)
-                            .background(.thinMaterial)
-                            .clipShape(Capsule())
+//                            .background(Capsule().fill(Color.secondary.opacity(0.2)))
                     }
                 
                 let lowThreshold = 4.0
@@ -951,3 +948,4 @@ struct Triangle: Shape {
 #Preview {
     WaterChartView(selectedIndices: Set([0, 1, 2]))
 }
+
