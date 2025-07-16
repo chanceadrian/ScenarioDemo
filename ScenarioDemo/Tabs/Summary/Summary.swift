@@ -34,6 +34,8 @@ struct SummaryView: View {
                     Button("Reset Scenario") {
                         UserDefaults.standard.removeObject(forKey: "bus3OverloadTimer")
                         UserDefaults.standard.removeObject(forKey: "timelineAnchorTime")
+                        UserDefaults.standard.removeObject(forKey: "impellerDipTime")
+                        UserDefaults.standard.removeObject(forKey: "rerouteTime")
                         UserDefaults.standard.set(Date().timeIntervalSince1970, forKey: "groundCommStartTime")
                     }
 

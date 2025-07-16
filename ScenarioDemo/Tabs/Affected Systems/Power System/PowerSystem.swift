@@ -20,21 +20,20 @@ func dateString(daysAgo: Int, hour: Int = 9, minute: Int = 0) -> String {
 struct PowerSystemView: View {
     @Environment(\.colorScheme) private var colorScheme
     @AppStorage("bus3OverloadTimer") private var overloadStartDate: Double = 0
+    @AppStorage("rerouteTime") private var storedRerouteTime: Double = 0
     @State private var now: Date = Date()
     @State private var selectedIndices: Set<Int> = [0, 1, 2]
     @State private var schematicSelection: Int = 0
 
     private let overloadDuration: TimeInterval = 52 * 60
 
-    private var rerouteTime: Date {
-        Calendar.current.date(byAdding: .minute, value: -15, to: now)!
-    }
-
-    private var rerouteTimeString: String {
+    private var rerouteTimeString: String? {
+        guard storedRerouteTime > 0 else { return nil }
+        let date = Date(timeIntervalSince1970: storedRerouteTime)
         let formatter = DateFormatter()
         formatter.dateStyle = .none
         formatter.timeStyle = .short
-        return formatter.string(from: rerouteTime)
+        return formatter.string(from: date)
     }
 
     private var overloadCountdownString: String {
@@ -57,7 +56,13 @@ struct PowerSystemView: View {
         HStack(alignment: .top, spacing: 32) {
             PanelView(
                 panelTitle: "Power System",
-                panelSubtitle: "At \(rerouteTimeString), transit-critical components were diverted from Bus 2 to Bus 3 after Bus 2 exceeded its power capacity.",
+                panelSubtitle: {
+                    if let time = rerouteTimeString {
+                        return "At \(time), transit-critical components were diverted from Bus 2 to Bus 3 after Bus 2 exceeded its power capacity."
+                    } else {
+                        return "Transit-critical components were diverted from Bus 2 to Bus 3 after Bus 2 exceeded its power capacity."
+                    }
+                }(),
                 pickerEntries: schematicSelection == 1 ? [
                     PickerEntry(color: .indigo, name: "Bus 1", unit: "Voltage", sfSymbol: "circle.fill"),
                     PickerEntry(color: .mint, name: "Bus 2", unit: "Voltage", sfSymbol: "square.fill"),
@@ -95,6 +100,12 @@ struct PowerSystemView: View {
         .task {
             Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in
                 now = Date()
+            }
+        }
+        .onAppear {
+            if storedRerouteTime == 0 {
+                let rerouteTime = Calendar.current.date(byAdding: .minute, value: -15, to: now)!
+                storedRerouteTime = rerouteTime.timeIntervalSince1970
             }
         }
     }
@@ -257,4 +268,3 @@ struct LogEntryView: View {
             .padding()
     }
 }
-

@@ -12,29 +12,24 @@ struct WaterPurifierView: View {
     @Environment(\.colorScheme) private var colorScheme
     @State private var selectedIndices: Set<Int> = [0]
     @State private var schematicSelection: Int = 1 // Default to Data tab
-    
-    private var impellerDipTime: String? {
-        let data = WaterChartSpeedView.generateData()
-        for i in 1..<data.count {
-            let prev = data[i-1].rpm
-            let current = data[i].rpm
-            if prev - current > 500 {
-                let formatter = DateFormatter()
-                formatter.dateStyle = .none
-                formatter.timeStyle = .short
-                return formatter.string(from: data[i].time)
-            }
-        }
-        return nil
+    @AppStorage("impellerDipTime") private var storedDipTime: Double = 0
+
+    private var impellerDipTimeString: String? {
+        guard storedDipTime > 0 else { return nil }
+        let date = Date(timeIntervalSince1970: storedDipTime)
+        let formatter = DateFormatter()
+        formatter.dateStyle = .none
+        formatter.timeStyle = .short
+        return formatter.string(from: date)
     }
-    
+
     var body: some View {
         
         HStack(alignment: .top, spacing: 32) {
             PanelView(
                 panelTitle: "Water Purifier",
                 panelSubtitle: {
-                    if let time = impellerDipTime {
+                    if let time = impellerDipTimeString {
                         return "Starting at \(time), Water Purifier Impeller Speed breached low threshold."
                     } else {
                         return "Water Purifier Impeller Speed breached low threshold."
@@ -72,6 +67,19 @@ struct WaterPurifierView: View {
         .padding(.bottom, 20)
         .animation(.spring(response: 0.38, dampingFraction: 0.74), value: schematicSelection)
         .frame(height: 640)
+        .onAppear {
+            if storedDipTime == 0 {
+                let data = WaterChartSpeedView.generateData()
+                for i in 1..<data.count {
+                    let prev = data[i-1].rpm
+                    let current = data[i].rpm
+                    if prev - current > 500 {
+                        storedDipTime = data[i].time.timeIntervalSince1970
+                        break
+                    }
+                }
+            }
+        }
         
     }
 }
@@ -197,3 +205,4 @@ struct WaterPurifierLogView: View {
 #Preview {
     WaterPurifierView()
 }
+
