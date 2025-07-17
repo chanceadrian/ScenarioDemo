@@ -10,32 +10,42 @@ import UserNotifications
 
 struct ContentView: View {
     @State private var buttonPressed: Bool = true
+    @State private var arrowOffset: CGFloat = 0
+    @State private var animateArrow = false
     
     var body: some View {
         VStack {
             if !buttonPressed {
-                Button(action: handleButtonPress) {
-                    Label("Start Scenario", systemImage: "play.fill")
+                VStack {
+                    Button(action: handleButtonPress) {
+                        Label("Start Scenario", systemImage: "play.fill")
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(.orange)
+                    .padding()
                 }
-                .buttonStyle(.bordered)
-                .tint(.orange)
-                .padding()
+                .onAppear { arrowOffset = 0 }
             } else {
                 VStack(alignment: .trailing, spacing: 8){
-                    HStack(alignment: .center, spacing: 4) {
+                    HStack(spacing: 4) {
                         Text("Press Digital Crown")
                         Image(systemName: "arrowshape.forward.fill")
                             .font(.title3)
                     }
                     .font(.footnote)
                     .multilineTextAlignment(.trailing)
-                    .foregroundStyle(.secondary)
+                    .offset(x: arrowOffset)
+                    .onAppear {
+                        withAnimation(Animation.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
+                            arrowOffset = 6
+                        }
+                    }
                     
-                    Spacer(minLength: 96)
+                    Spacer()
                     
-                    Text("Scenario beginning.")
-                        .font(.title3)
-                        .fontWeight(.semibold)
+                    Text("Scenario beginning...")
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
                 }
             }
         }
@@ -44,6 +54,7 @@ struct ContentView: View {
                 // Handle permission error or status here if needed
             }
         }
+        .padding(.vertical, 3)
     }
     
     func handleButtonPress() {
