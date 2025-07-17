@@ -111,7 +111,13 @@ struct TransitPhaseView: View {
                                     .foregroundStyle(.secondary)
                             }
                         } icon: {
-                            Image(systemName: "\(component.criticality).circle")
+                            Image(systemName: {
+                                switch component.criticality {
+                                case 1: return "exclamationmark.3"
+                                case 2: return "exclamationmark.2"
+                                default: return "exclamationmark"
+                                }
+                            }())
                         }
                         .badge("\(component.wattDraw) W")
                     }
@@ -140,4 +146,3 @@ struct TransitPhaseView: View {
         TransitPhaseView()
     }
 }
-
